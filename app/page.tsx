@@ -146,7 +146,8 @@ export default function Home() {
             className="md:text-center
            text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
           >
-            Especialistas en desarrollo de software y sitios web personalizados para empresas e individuos
+            Especialistas en desarrollo de software y sitios web personalizados
+            para empresas e individuos
           </p>
 
           <div
@@ -333,7 +334,8 @@ export default function Home() {
           py-4 md:w-1/2 mx-auto 
           text-xl md:text-2xl text-gray-500"
           >
-            Nuestro proceso está diseñado para crear soluciones tecnológicas efectivas y escalables
+            Nuestro proceso está diseñado para crear soluciones tecnológicas
+            efectivas y escalables
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center w-full md:w-1/2 mx-auto">
@@ -358,7 +360,11 @@ export default function Home() {
           />
           <div className="flex flex-col gap-y-5 md:w-1/2">
             <h1 className="text-lg md:text-2xl ">
-              &quot;Capital Code ha transformado completamente nuestra presencia digital. Su equipo no solo desarrolló una plataforma excepcional, sino que también nos guió estratégicamente en cada paso del proceso. Su experiencia en desarrollo de software personalizado fue invaluable para nuestro negocio.&quot;
+              &quot;Capital Code ha transformado completamente nuestra presencia
+              digital. Su equipo no solo desarrolló una plataforma excepcional,
+              sino que también nos guió estratégicamente en cada paso del
+              proceso. Su experiencia en desarrollo de software personalizado
+              fue invaluable para nuestro negocio.&quot;
             </h1>
             <div className="flex items-center gap-x-1">
               <IconStarFilled className="text-4xl text-yellow-500" />
@@ -397,7 +403,7 @@ export default function Home() {
           </h1>
           <p className="text-left  text-xl  text-gray-500">519-200-5000</p>
           <p className="text-left  text-xl  text-gray-500">
-            admin@capitalcode.ca
+            capitalcodecol@gmail.com
           </p>
         </div>
 
