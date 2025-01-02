@@ -17,19 +17,19 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
   const isHomePage = pathname === "/";
 
   return (
-    <div className="overflow-hidden rounded-[6px] top-5 sticky md:mx-auto z-50 xl:w-4/5 2xl:w-[68%] bg-white flex items-center justify-between py-6 px-4 md:px-8 mx-6">
+    <div className="overflow-hidden rounded-[6px] top-5 sticky md:mx-auto z-50 xl:w-4/5 2xl:w-[68%] bg-white flex items-center justify-between py-4 sm:py-6 px-3 sm:px-4 md:px-8 mx-3 sm:mx-6">
       <Link href={"/"} aria-label="Ir a la página principal">
         <Image
           src={"/logo/logo.webp"}
           alt="Logo Capital Code"
           width={1000}
           height={1000}
-          className="w-40"
+          className="w-32 sm:w-40"
         />
       </Link>
 
-      <div className="absolute right-1/2 translate-x-1/2 transform">
-        <div className="hidden md:flex gap-x-10 items-center text-gray-700 font-medium text-lg cursor-pointer">
+      <div className="absolute right-1/2 translate-x-1/2 transform md:pr-24 lg:pr-32 xl:pr-0">
+        <div className="hidden md:flex gap-x-6 lg:gap-x-10 items-center text-gray-700 font-medium text-base lg:text-lg cursor-pointer">
           <Link href={"/showcase"} className="hover:text-blue-500">
             Proyectos
           </Link>
