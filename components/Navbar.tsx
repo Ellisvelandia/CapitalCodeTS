@@ -1,8 +1,13 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { Link as ScrollLink } from 'react-scroll';
-import { IconX, IconMenu2 } from '@tabler/icons-react';
-import { usePathname } from 'next/navigation';
+import Image from "next/image";
+import Link from "next/link";
+import { Link as ScrollLink } from "react-scroll";
+import {
+  IconX,
+  IconMenu2,
+  IconBrandWhatsapp,
+  IconBrandMessenger,
+} from "@tabler/icons-react";
+import { usePathname } from "next/navigation";
 
 interface NavbarProps {
   isMenuOpen: boolean;
@@ -11,7 +16,7 @@ interface NavbarProps {
 
 const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
   const pathname = usePathname();
-  const isHomePage = pathname === '/';
+  const isHomePage = pathname === "/";
 
   return (
     <div className="overflow-hidden rounded-[6px] top-5 sticky md:mx-auto z-50 xl:w-4/5 2xl:w-[68%] bg-white flex items-center justify-between py-6 px-4 md:px-8 mx-6">
@@ -100,54 +105,96 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
       </div>
 
       {isMenuOpen && (
-        <div className="absolute top-full left-0 right-0 bg-white border-t md:hidden">
-          <div className="flex flex-col p-4 space-y-4">
-            <Link href={"/showcase"} className="hover:text-blue-500">
-              Proyectos
-            </Link>
-            {isHomePage ? (
-              <>
-                <ScrollLink
-                  to="services"
-                  smooth={true}
-                  className="hover:text-blue-500"
-                  role="button"
-                  tabIndex={0}
+        <div className="fixed inset-0 bg-white z-50 md:hidden">
+          <div className="flex flex-col min-h-screen">
+            <div className="flex justify-between items-center p-6">
+              <div className="w-32">
+                <Image
+                  src={"/logo/logo.webp"}
+                  alt="Logo Capital Code"
+                  width={1000}
+                  height={1000}
+                  className="w-full"
+                />
+              </div>
+              <button
+                onClick={toggleMenu}
+                className="p-2"
+                aria-label="Cerrar menú"
+              >
+                <IconX className="w-5 h-5 text-gray-700" />
+              </button>
+            </div>
+
+            <nav className="flex-1 px-6 pt-8">
+              <div className="space-y-8">
+                <Link
+                  href={"/showcase"}
+                  className="block text-[17px] text-blue-600 font-medium"
+                  onClick={toggleMenu}
                 >
-                  Servicios
-                </ScrollLink>
-                <ScrollLink
-                  to="process"
-                  smooth={true}
-                  className="hover:text-blue-500"
-                  role="button"
-                  tabIndex={0}
-                >
-                  Proceso
-                </ScrollLink>
-                <ScrollLink
-                  to="guarentees"
-                  smooth={true}
-                  className="hover:text-blue-500"
-                  role="button"
-                  tabIndex={0}
-                >
-                  Garantías
-                </ScrollLink>
-              </>
-            ) : (
-              <>
-                <Link href="/#services" className="hover:text-blue-500">
-                  Servicios
+                  Proyectos
                 </Link>
-                <Link href="/#process" className="hover:text-blue-500">
-                  Proceso
-                </Link>
-                <Link href="/#guarentees" className="hover:text-blue-500">
-                  Garantías
-                </Link>
-              </>
-            )}
+                {isHomePage ? (
+                  <>
+                    <ScrollLink
+                      to="services"
+                      smooth={true}
+                      className="block text-[17px] text-gray-700 font-medium"
+                      role="button"
+                      tabIndex={0}
+                      onClick={toggleMenu}
+                    >
+                      Servicios
+                    </ScrollLink>
+                    <ScrollLink
+                      to="process"
+                      smooth={true}
+                      className="block text-[17px] text-gray-700 font-medium"
+                      role="button"
+                      tabIndex={0}
+                      onClick={toggleMenu}
+                    >
+                      Proceso
+                    </ScrollLink>
+                    <ScrollLink
+                      to="guarentees"
+                      smooth={true}
+                      className="block text-[17px] text-gray-700 font-medium"
+                      role="button"
+                      tabIndex={0}
+                      onClick={toggleMenu}
+                    >
+                      Garantías
+                    </ScrollLink>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/#services"
+                      className="block text-[17px] text-gray-700 font-medium"
+                      onClick={toggleMenu}
+                    >
+                      Servicios
+                    </Link>
+                    <Link
+                      href="/#process"
+                      className="block text-[17px] text-gray-700 font-medium"
+                      onClick={toggleMenu}
+                    >
+                      Proceso
+                    </Link>
+                    <Link
+                      href="/#guarentees"
+                      className="block text-[17px] text-gray-700 font-medium"
+                      onClick={toggleMenu}
+                    >
+                      Garantías
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
           </div>
         </div>
       )}
