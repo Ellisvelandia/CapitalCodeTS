@@ -77,7 +77,7 @@ export default function Home() {
             alt="Logo"
             width={1000}
             height={1000}
-            className="w-28"
+            className="w-40"
           />
         </Link>
 
@@ -114,12 +114,6 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-x-4">
-          <a href="tel:519400200" className="hidden lg:flex">
-            <button className="px-4 py-2 rounded-md flex items-center gap-x-3">
-              (519)-400-200
-            </button>
-          </a>
-
           <Link
             href={"/meeting"}
             className="
@@ -152,7 +146,8 @@ export default function Home() {
             className="md:text-center
            text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
           >
-            Agenda una llamada con nosotros para discutir tu proyecto y obtener un presupuesto en minutos
+            Agenda una llamada con nosotros para discutir tu proyecto y obtener
+            un presupuesto en minutos
           </p>
 
           <div
@@ -261,11 +256,11 @@ export default function Home() {
                 direction="left"
                 items={[
                   {
-                    logo: "/logo/logo.webp",
+                    logo: "/logo/logo.svg",
                     name: "Logo1",
                   },
                   {
-                    logo: "/logo/logo.webp",
+                    logo: "/logo/logo.svg",
                     name: "Logo2",
                   },
                 ]}
@@ -277,14 +272,15 @@ export default function Home() {
 
       <Element name="services">
         <div className="md:px-0 mx-6 xl:w-4/5 2xl:w-[68%] md:mx-auto ">
-        <h1>
-          <WordPullUpDemo />
-        </h1>
-        <p className="md:text-center py-4 md:w-1/2 mx-auto text-xl md:text-2xl text-gray-500">
-          Todos nuestros servicios están diseñados para ayudar a que tu negocio destaque
-        </p>
+          <h1>
+            <WordPullUpDemo />
+          </h1>
+          <p className="md:text-center py-4 md:w-1/2 mx-auto text-xl md:text-2xl text-gray-500">
+            Todos nuestros servicios están diseñados para ayudar a que tu
+            negocio destaque
+          </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-10">
             {services.map((service) => (
               <div
                 key={service.title}
@@ -311,8 +307,8 @@ export default function Home() {
 
       <Element name="process">
         <main className="md:px-0 mx-6 md:mx-auto">
-        <h1 className="text-3xl md:text-5xl md:text-center font-medium flex items-center gap-x-2 mx-auto justify-center">
-        Nuestro{" "}
+          <h1 className="text-3xl md:text-5xl md:text-center font-medium flex items-center gap-x-2 mx-auto justify-center">
+            Nuestro{" "}
             <span className="text-blue-500 flex gap-x-1 items-center">
               {" "}
               <Image
@@ -334,22 +330,23 @@ export default function Home() {
             Creativo
           </h1>
 
-          <p className="text-center 
+          <p
+            className="text-center 
           py-4 md:w-1/2 mx-auto 
-          text-xl md:text-2xl text-gray-500">
-            Todos nuestros servicios están diseñados para ayudar a que tu negocio sea notado.
+          text-xl md:text-2xl text-gray-500"
+          >
+            Todos nuestros servicios están diseñados para ayudar a que tu
+            negocio sea notado.
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center w-full md:w-1/2 mx-auto">
-          <div className="w-full md:w-1/2 order-2 md:order-1">
-            <AnimatedBeamMultipleOutputDemo />
+            <div className="w-full md:w-1/2 order-2 md:order-1">
+              <AnimatedBeamMultipleOutputDemo />
+            </div>
+            <div className="w-full md:w-1/2 order-1 md:order-2 md:ml-0">
+              <BoxRevealDemo />
+            </div>
           </div>
-          <div className="w-full md:w-1/2 order-1 md:order-2 md:ml-0">
-            <BoxRevealDemo />
-          </div>
-
-          </div>
-
         </main>
       </Element>
 
@@ -364,10 +361,10 @@ export default function Home() {
           />
           <div className="flex flex-col gap-y-5 md:w-1/2">
             <h1 className="text-lg md:text-2xl ">
-              &quot;Hemos estado trabajando con Bird durante más de 2 años y
-              ha sido increíble trabajar con ellos. Nos han ayudado a
-              hacer crecer nuestro negocio y no podríamos estar más felices con los
-              resultados. &quot;
+              &quot;Hemos estado trabajando con Capital Code durante más de 2
+              años y ha sido increíble trabajar con ellos. Nos han ayudado a
+              hacer crecer nuestro negocio y no podríamos estar más felices con
+              los resultados. &quot;
             </h1>
             <div className="flex items-center gap-x-1">
               <IconStarFilled className="text-4xl text-yellow-500" />
@@ -390,14 +387,14 @@ export default function Home() {
       </Element>
 
       <section className="my-10 md:py-20 xl:w-4/5 2xl:w-[68%] md:mx-auto">
-      <LetsMakeThingsHappenSection />
+        <LetsMakeThingsHappenSection />
       </section>
 
       <footer className="bg-[#fafafa] py-10  px-6 md:px-0 md:mx-auto border-t">
         <div className="flex flex-col  justify-between gap-y-3 xl:w-4/5 2xl:w-[68%] mx-auto">
           <h1 className="text-3xl md:text-5xl font-medium ">
             <Image
-              src={"/logo/logo.webp"}
+              src={"/logo/logo.svg"}
               width={10000}
               height={10000}
               className="w-40"
@@ -406,12 +403,12 @@ export default function Home() {
           </h1>
           <p className="text-left  text-xl  text-gray-500">519-200-5000</p>
           <p className="text-left  text-xl  text-gray-500">
-            admin@birdsoftware.ca
+            admin@capitalcode.ca
           </p>
         </div>
 
         <div className="flex md:justify-center gap-x-4 mt-10">
-          2025 Bird. Todos los derechos reservados.
+          2025 Capital Code. Todos los derechos reservados.
           <Link href="/" className="text-blue-500">
             Política de Privacidad
           </Link>

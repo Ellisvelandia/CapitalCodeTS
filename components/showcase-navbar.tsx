@@ -32,8 +32,8 @@ xl:w-4/5
     >
       <Link href="/">
       <Image
-        src="/logo/logo.webp"
-        alt="Bird Logo"
+        src="/logo/logo.svg"
+        alt="Capital Code Logo"
         width={1000}
         height={1000}
         className="w-28"
