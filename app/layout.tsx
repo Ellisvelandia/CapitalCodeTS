@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
+import FloatingWhatsApp from "@/components/floating-whatsapp";
 
 const font = Space_Grotesk({ subsets: ["latin"] });
 
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={font.className}>
 
         {children}
+        <FloatingWhatsApp />
         <Analytics />
 
       </body>
