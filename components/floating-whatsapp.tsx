@@ -20,12 +20,14 @@ const FloatingWhatsApp = () => {
   ];
 
   const handleWhatsAppClick = (number: string) => {
-    window.open(`https://wa.me/${number}`, '_blank');
+    const message = "¡Hola! Me gustaría obtener más información sobre sus servicios de desarrollo. ¿Podrían ayudarme?";
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/${number}?text=${encodedMessage}`, '_blank');
     setIsOpen(false);
   };
 
   return (
-    <div className="fixed bottom-8 right-8 z-50">
+    <div className="fixed bottom-8 left-8 z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-green-600 transition-colors duration-200 relative"
@@ -39,7 +41,7 @@ const FloatingWhatsApp = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-20 right-0 bg-white rounded-lg shadow-xl w-64 overflow-hidden">
+        <div className="absolute bottom-20 left-0 bg-white rounded-lg shadow-xl w-64 overflow-hidden">
           <div className="p-4 bg-green-500 text-white">
             <h3 className="text-lg font-semibold">Contáctanos</h3>
             <p className="text-sm opacity-90">Selecciona tu país</p>
