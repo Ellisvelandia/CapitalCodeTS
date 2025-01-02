@@ -32,7 +32,7 @@ xl:w-4/5
     >
       <Link href="/">
         <Image
-          src="/logo/logo.svg"
+          src="/logo/logo.webp"
           alt="Capital Code Logo"
           width={1000}
           height={1000}
