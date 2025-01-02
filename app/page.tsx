@@ -16,6 +16,8 @@ import { Link as ScrollLink, Element } from "react-scroll";
 import { IconStarFilled } from "@tabler/icons-react";
 import { ShootingStarsAndStarsBackgroundDemo } from "@/components/demos/shooting-stars-demo";
 import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen";
+import { useState } from "react";
+import { IconMenu2, IconX } from "@tabler/icons-react";
 
 const services = [
   {
@@ -57,6 +59,12 @@ const services = [
 ];
 
 export default function Home() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
     <div
       className="overflow-clip 
@@ -71,10 +79,10 @@ export default function Home() {
    xl:w-4/5 2xl:w-[68%] bg-white flex items-center 
    justify-between py-6 px-4 md:px-8 mx-6"
       >
-        <Link href={"/"}>
+        <Link href={"/"} aria-label="Ir a la página principal">
           <Image
             src={"/logo/logo.webp"}
-            alt="Logo"
+            alt="Logo Capital Code"
             width={1000}
             height={1000}
             className="w-40"
@@ -91,6 +99,8 @@ export default function Home() {
               to="services"
               smooth={true}
               className="hover:text-blue-500"
+              role="button"
+              tabIndex={0}
             >
               Servicios
             </ScrollLink>
@@ -99,6 +109,8 @@ export default function Home() {
               to="process"
               smooth={true}
               className="hover:text-blue-500"
+              role="button"
+              tabIndex={0}
             >
               Proceso
             </ScrollLink>
@@ -107,6 +119,8 @@ export default function Home() {
               to="guarentees"
               smooth={true}
               className="hover:text-blue-500"
+              role="button"
+              tabIndex={0}
             >
               Garantías
             </ScrollLink>
@@ -114,6 +128,14 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-x-4">
+          <button
+            onClick={toggleMenu}
+            className="md:hidden p-2 text-gray-700"
+            aria-label="Toggle navigation menu"
+            aria-expanded={isMenuOpen}
+          >
+            {isMenuOpen ? <IconX size={24} /> : <IconMenu2 size={24} />}
+          </button>
           <Link
             href={"/meeting"}
             className="
@@ -128,12 +150,58 @@ export default function Home() {
   bg-[#121212]
   transition
   duration-200
-     hover:shadow-[1px_1px_rgba(0,0,0),2px_2px_rgba(0,0,0),3px_3px_rgba(0,0,0),4px_4px_rgba(0,0,0),5px_5px_0px_0px_rgba(0,0,0)] dark:shadow-[1px_1px_rgba(255,255,255),2px_2px_rgba(255,255,255),3px_3px_rgba(255,255,255),4px_4px_rgba(255,255,255),5px_5px_0px_0px_rgba(255,255,255)] "
+  hover:shadow-[1px_1px_rgba(0,0,0),2px_2px_rgba(0,0,0),3px_3px_rgba(0,0,0),4px_4px_rgba(0,0,0),5px_5px_0px_0px_rgba(0,0,0)] dark:shadow-[1px_1px_rgba(255,255,255),2px_2px_rgba(255,255,255),3px_3px_rgba(255,255,255),4px_4px_rgba(255,255,255),5px_5px_0px_0px_rgba(255,255,255)]"
+            aria-label="Agendar una llamada"
           >
             Agendar Llamada
           </Link>
         </div>
       </Element>
+
+      {/* Mobile Navigation Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-white">
+          <div className="flex flex-col items-center justify-center h-full space-y-8 text-xl font-medium">
+            <Link 
+              href={"/showcase"} 
+              className="hover:text-blue-500 px-6 py-3"
+              onClick={toggleMenu}
+            >
+              Proyectos
+            </Link>
+            <ScrollLink
+              to="services"
+              smooth={true}
+              className="hover:text-blue-500 px-6 py-3"
+              onClick={toggleMenu}
+              role="button"
+              tabIndex={0}
+            >
+              Servicios
+            </ScrollLink>
+            <ScrollLink
+              to="process"
+              smooth={true}
+              className="hover:text-blue-500 px-6 py-3"
+              onClick={toggleMenu}
+              role="button"
+              tabIndex={0}
+            >
+              Proceso
+            </ScrollLink>
+            <ScrollLink
+              to="guarentees"
+              smooth={true}
+              className="hover:text-blue-500 px-6 py-3"
+              onClick={toggleMenu}
+              role="button"
+              tabIndex={0}
+            >
+              Garantías
+            </ScrollLink>
+          </div>
+        </div>
+      )}
 
       <main className="md:pb-10">
         <div className="md:px-0 mx-6 xl:w-4/5 2xl:w-[68%] md:mx-auto mt-14">
