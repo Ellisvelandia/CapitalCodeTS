@@ -4,8 +4,6 @@ import { Link as ScrollLink } from "react-scroll";
 import {
   IconX,
   IconMenu2,
-  IconBrandWhatsapp,
-  IconBrandMessenger,
 } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
 

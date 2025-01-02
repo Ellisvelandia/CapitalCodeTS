@@ -1,9 +1,10 @@
 "use client";
 
 import Calendly from "./calendly";
-import ShowcaseNavbar from "@/components/showcase-navbar";
 import { PiCheckCircle } from "react-icons/pi";
 import { motion } from "framer-motion";
+import Navbar from "@/components/Navbar";
+import { useState } from "react";
 
 const checkItemVariants = {
   hidden: { opacity: 0, x: -50 },
@@ -11,17 +12,19 @@ const checkItemVariants = {
 };
 
 const Meeting = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
 
   return (
     <div className="
-    
-    flex flex-col  w-full  
-
-     overflow-clip inset-0 -z-10 
-  bg-[#fafafa] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]
-    
+      flex flex-col  w-full  
+      overflow-clip inset-0 -z-10 
+      bg-[#fafafa] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]
     ">
-      <ShowcaseNavbar />
+      <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
       <div className="md:px-0 px-6 xl:w-4/5 2xl:w-[68%] justify-between md:mt-14 md:flex mx-auto  ">
         <div className="md:w-2/5">
           <h1 className="text-4xl font-semibold pt-10   ">Agenda una Reunión</h1>
