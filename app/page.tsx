@@ -20,39 +20,39 @@ import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen
 const services = [
   {
     icon: "/images/s_6.png",
-    title: "Diseño + Desarrollo Web",
+    title: "Desarrollo Web Personalizado",
     description:
-      "Lleva tu negocio al siguiente nivel con nuestros servicios de diseño y desarrollo web",
+      "Creamos sitios web únicos y personalizados que reflejan la identidad de tu marca y cumplen tus objetivos comerciales",
   },
   {
     icon: "/images/s_1.png",
-    title: "Optimización para Motores de Búsqueda",
+    title: "Desarrollo de Software",
     description:
-      "Lleva tu sitio web a los primeros resultados de búsqueda con nuestros servicios de SEO",
+      "Desarrollamos soluciones de software a medida para optimizar tus procesos empresariales y aumentar la eficiencia",
   },
   {
     icon: "/images/s_5.png",
-    title: "Creación de Contenido",
+    title: "Aplicaciones Móviles",
     description:
-      "Impulsa la presencia en línea de tu marca con nuestros servicios de marketing en redes sociales",
+      "Diseñamos y desarrollamos aplicaciones móviles intuitivas para iOS y Android que conectan con tus usuarios",
   },
   {
     icon: "/images/s_3.png",
-    title: "Marketing en Redes Sociales",
+    title: "Consultoría Tecnológica",
     description:
-      "Interactúa con tus clientes y aumenta las ventas con nuestros servicios de marketing por correo electrónico",
+      "Asesoramos en la selección e implementación de tecnologías para maximizar el potencial de tu negocio",
   },
   {
     icon: "/images/s_4.png",
-    title: "Marketing por Email",
+    title: "E-commerce",
     description:
-      "Con nuestros servicios de creación de contenido, ayudamos a las empresas a impulsar resultados",
+      "Creamos tiendas en línea robustas y seguras para impulsar tus ventas en el mundo digital",
   },
   {
     icon: "/images/s_2.png",
-    title: "Publicidad de Pago por Clic",
+    title: "Mantenimiento y Soporte",
     description:
-      "No desperdicies dinero en publicidad ineficaz. Nuestros servicios de PPC te ayudan a llegar a tu público objetivo",
+      "Ofrecemos soporte continuo y mantenimiento para garantizar el funcionamiento óptimo de tus sistemas",
   },
 ];
 
@@ -146,8 +146,7 @@ export default function Home() {
             className="md:text-center
            text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
           >
-            Agenda una llamada con nosotros para discutir tu proyecto y obtener
-            un presupuesto en minutos
+            Especialistas en desarrollo de software y sitios web personalizados para empresas e individuos
           </p>
 
           <div
@@ -198,25 +197,25 @@ export default function Home() {
             <BoxReveal boxColor={"#3b82f6"} duration={0.5}>
               <p className="md:text-xl font-semibold flex gap-x-2 md:gap-x-4 items-center">
                 <PiCheckBold className="text-xl text-blue-500" />
-                Diseño
+                Desarrollo Web
               </p>
             </BoxReveal>
             <BoxReveal boxColor={"#3b82f6"} duration={0.5}>
               <p className="md:text-xl font-semibold flex gap-x-2 md:gap-x-4 items-center">
                 <PiCheckBold className="text-xl text-blue-500" />
-                Desarrollo
+                Desarrollo de Software
               </p>
             </BoxReveal>
             <BoxReveal boxColor={"#3b82f6"} duration={0.5}>
               <p className="md:text-xl font-semibold flex gap-x-2 md:gap-x-4 items-center">
                 <PiCheckBold className="text-xl text-blue-500" />
-                Marketing
+                Aplicaciones Móviles
               </p>
             </BoxReveal>
             <BoxReveal boxColor={"#3b82f6"} duration={0.5}>
               <p className="md:text-xl font-semibold flex gap-x-2 md:gap-x-4 items-center">
                 <PiCheckBold className="text-xl text-blue-500" />
-                Estrategia
+                Consultoría Tecnológica
               </p>
             </BoxReveal>
           </div>
@@ -224,7 +223,7 @@ export default function Home() {
           <div className="md:flex items-center justify-between gap-y-4 my-10 gap-x-28 mx-auto">
             <div className="md:w-2/5">
               <h1 className="text-2xl font-medium text-gray-600 w-4/5">
-                Marcas de confianza en todo el mundo
+                Expertos en soluciones digitales personalizadas
               </h1>
 
               <div className="flex my-6 gap-x-5 w-full">
@@ -232,7 +231,7 @@ export default function Home() {
                   <h1 className="text-blue-500 text-3xl md:text-5xl">
                     <NumberTicker value={1000} /> +
                     <p className="text-gray-500 text-sm md:text-md">
-                      Clientes Satisfechos
+                      Proyectos Exitosos
                     </p>
                   </h1>
                 </div>
@@ -243,7 +242,7 @@ export default function Home() {
                   <h1 className="text-blue-500 text-3xl md:text-5xl whitespace-nowrap overflow-hidden">
                     <NumberTicker value={100} /> +
                     <p className="text-gray-500 text-sm md:text-md">
-                      Proyectos Completados
+                      Clientes Satisfechos
                     </p>
                   </h1>
                 </div>
@@ -276,8 +275,7 @@ export default function Home() {
             <WordPullUpDemo />
           </h1>
           <p className="md:text-center py-4 md:w-1/2 mx-auto text-xl md:text-2xl text-gray-500">
-            Todos nuestros servicios están diseñados para ayudar a que tu
-            negocio destaque
+            Transformamos ideas en soluciones tecnológicas innovadoras
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mt-10">
@@ -335,8 +333,7 @@ export default function Home() {
           py-4 md:w-1/2 mx-auto 
           text-xl md:text-2xl text-gray-500"
           >
-            Todos nuestros servicios están diseñados para ayudar a que tu
-            negocio sea notado.
+            Nuestro proceso está diseñado para crear soluciones tecnológicas efectivas y escalables
           </p>
 
           <div className="flex flex-col md:flex-row items-center justify-center w-full md:w-1/2 mx-auto">
@@ -361,10 +358,7 @@ export default function Home() {
           />
           <div className="flex flex-col gap-y-5 md:w-1/2">
             <h1 className="text-lg md:text-2xl ">
-              &quot;Hemos estado trabajando con Capital Code durante más de 2
-              años y ha sido increíble trabajar con ellos. Nos han ayudado a
-              hacer crecer nuestro negocio y no podríamos estar más felices con
-              los resultados. &quot;
+              &quot;Capital Code ha transformado completamente nuestra presencia digital. Su equipo no solo desarrolló una plataforma excepcional, sino que también nos guió estratégicamente en cada paso del proceso. Su experiencia en desarrollo de software personalizado fue invaluable para nuestro negocio.&quot;
             </h1>
             <div className="flex items-center gap-x-1">
               <IconStarFilled className="text-4xl text-yellow-500" />

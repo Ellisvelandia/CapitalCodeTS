@@ -10,12 +10,12 @@ function LetsMakeThingsHappenSection() {
     bg-accent rounded-[45px] p-[50px] md:p-[60px] relative">
       <div className="md:pr-[22rem]">
         <p className="text-3xl font-medium">
-          Hagamos que las cosas sucedan
+          Desarrollemos tu Próximo Proyecto
         </p>
 
         <p className="my-10 text-xl">
-          Contáctanos hoy para saber más sobre cómo nuestros servicios de marketing digital
-          pueden ayudar a tu negocio a crecer y tener éxito en línea.
+          Contáctanos hoy para discutir cómo podemos ayudarte a crear la solución tecnológica perfecta para tu negocio.
+          Desde aplicaciones web hasta software empresarial, estamos aquí para hacer realidad tu visión.
         </p>
 
         <Link
@@ -36,7 +36,7 @@ function LetsMakeThingsHappenSection() {
        duration-200 
        hover:shadow-[1px_1px_rgba(0,0,0),2px_2px_rgba(0,0,0),3px_3px_rgba(0,0,0),4px_4px_rgba(0,0,0),5px_5px_0px_0px_rgba(0,0,0)] dark:shadow-[1px_1px_rgba(255,255,255),2px_2px_rgba(255,255,255),3px_3px_rgba(255,255,255),4px_4px_rgba(255,255,255),5px_5px_0px_0px_rgba(255,255,255)] "
         >
-          Agendar Llamada
+          Iniciar Proyecto
         </Link>
       </div>
       <div className="absolute -top-8 right-8 hidden md:block">

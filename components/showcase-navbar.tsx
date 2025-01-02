@@ -48,16 +48,16 @@ xl:w-4/5
           hover:text-blue-500
           "
           >
-            Showcase
+            Proyectos
           </Link>
              <Link href="/" className="hover:text-blue-500">
-            Services
+            Servicios
           </Link>
           <Link href="/" className="hover:text-blue-500">
-        Process
+            Proceso
           </Link>
           <Link href="/" className="hover:text-blue-500">
-            Guarentees
+            Garantías
           </Link>
   
         </div>
@@ -87,7 +87,7 @@ xl:w-4/5
        duration-200 
        hover:shadow-[1px_1px_rgba(0,0,0),2px_2px_rgba(0,0,0),3px_3px_rgba(0,0,0),4px_4px_rgba(0,0,0),5px_5px_0px_0px_rgba(0,0,0)] dark:shadow-[1px_1px_rgba(255,255,255),2px_2px_rgba(255,255,255),3px_3px_rgba(255,255,255),4px_4px_rgba(255,255,255),5px_5px_0px_0px_rgba(255,255,255)] "
       >
-        Book a call
+        Agendar Llamada
       </Link>
       </div>
     </div>
