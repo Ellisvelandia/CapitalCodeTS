@@ -1,6 +1,5 @@
 "use client";
 
-
 import Calendly from "./calendly";
 import ShowcaseNavbar from "@/components/showcase-navbar";
 import { PiCheckCircle } from "react-icons/pi";
@@ -12,8 +11,6 @@ const checkItemVariants = {
 };
 
 const Meeting = () => {
-
-
 
   return (
     <div className="
@@ -27,28 +24,28 @@ const Meeting = () => {
       <ShowcaseNavbar />
       <div className="md:px-0 px-6 xl:w-4/5 2xl:w-[68%] justify-between md:mt-14 md:flex mx-auto  ">
         <div className="md:w-2/5">
-          <h1 className="text-4xl font-semibold pt-10   ">Let&apos;s Meet</h1>
+          <h1 className="text-4xl font-semibold pt-10   ">Agenda una Reunión</h1>
           <p className="text-lg text-gray-500 py-4">
-            We are always excited to meet new people and discuss new projects.
-            Please feel free to book a meeting with us.
+            Nos entusiasma conocer nuevos clientes y discutir proyectos de desarrollo de software personalizados.
+            Agenda una consulta gratuita con nuestro equipo de expertos.
           </p>
 
           {[
                 {
-                  title: "Development + Design",
+                  title: "Desarrollo + Diseño de Software",
                   description:
-                    "Turn your ideas into reality with our development and design services.",
+                    "Convertimos tus ideas en soluciones tecnológicas innovadoras y personalizadas.",
                 },
 
                 {
-                  title: "Free Consultation",
+                  title: "Consultoría Gratuita",
                   description:
-                    "Get expert advice on how to improve your business and increase your online presence.",
+                    "Recibe asesoría experta sobre cómo mejorar tu negocio a través de soluciones digitales.",
                 },
                 {
-                  title: "Technical Support",
+                  title: "Soporte Técnico Especializado",
                   description:
-                    "Get technical support for your website or application.",
+                    "Brindamos soporte técnico continuo para tu software y aplicaciones web.",
                 },
               ].map((item, index) => (
                 <motion.div
