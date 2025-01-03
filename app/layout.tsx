@@ -8,6 +8,7 @@ import FloatingChatbot from "@/components/floating-chatbot";
 const font = Space_Grotesk({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://capital-code.vercel.app'),
   title: "Capital Code | Desarrollo de Software y Sitios Web Personalizados",
   description: "Expertos en desarrollo de software y sitios web personalizados para empresas e individuos. Transformamos ideas en soluciones tecnológicas innovadoras.",
   openGraph: {
