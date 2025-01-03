@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Capital Code | Desarrollo de Software",
     description: "Expertos en desarrollo de software y sitios web personalizados",
-    url: 'https://capitalcode.com.ec',
+    url: 'https://capital-code.vercel.app/',
     siteName: 'Capital Code',
-    locale: 'es_EC',
+    locale: 'es_CO',
     type: 'website',
     images: [
       {
