@@ -189,12 +189,20 @@ export default function Home() {
                 direction="left"
                 items={[
                   {
-                    logo: "/logo/logo.svg",
+                    logo: "/logo/nexus.webp",
                     name: "Logo1",
                   },
                   {
-                    logo: "/logo/logo.svg",
+                    logo: "/logo/parabole.webp",
                     name: "Logo2",
+                  },
+                  {
+                    logo: "/logo/polyurea.webp",
+                    name: "Logo3",
+                  },
+                  {
+                    logo: "/logo/wordable.webp",
+                    name: "Logo4",
                   },
                 ]}
               />
