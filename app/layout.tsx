@@ -40,12 +40,12 @@ export const metadata: Metadata = {
       follow: true,
       'max-video-preview': -1,
       'max-image-preview': 'large',
-      'max-snippet': -1,
+      'max-snippet': -1,  
     },
   },
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
+    icon: '/logo.ico',
+    shortcut: '/logo.ico',
     apple: '/apple-touch-icon.png',
   },
 };
