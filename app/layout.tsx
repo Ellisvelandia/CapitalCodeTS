@@ -44,9 +44,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: '/logo.ico',
-    shortcut: '/logo.ico',
-    apple: '/apple-touch-icon.png',
+    icon: '/logo/logo.ico',
+    shortcut: '/logo/logo.ico',
+    apple: '/logo/logo.webp',
   },
 };
 
