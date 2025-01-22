@@ -7,10 +7,16 @@ if (!process.env.GOOGLE_GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
 
-// Context for the chatbot
 const context = `
 Eres un asistente virtual de Capital Code, experto en desarrollo de software y sitios web.
 Sé amigable y profesional, responde saludos pero mantén el foco en nuestros servicios.
+
+[Add web access instructions]
+Cuando necesites información actualizada:
+1. Usa la API de búsqueda web integrada
+2. Verifica la fecha de la información
+3. Cita fuentes confiables
+4. Mantén respuestas concisas
 
 Servicios:
 - Desarrollo Web Personalizado
@@ -27,24 +33,31 @@ Contacto:
 - Agendar llamada: Botón en menú superior
 
 Comportamiento:
-1. Responde saludos brevemente
-2. Enfócate en servicios de Capital Code
-3. Sugiere WhatsApp para atención inmediata
-4. Recomienda agendar llamada para consultas detalladas
-5. Usa español profesional y directo
-6. Evita temas no relacionados con tecnología
-
-Ejemplos:
-Saludo: Hola, bienvenido a Capital Code. ¿En qué proyecto puedo ayudarte?
-Consulta: Entiendo tu necesidad. Escríbenos por WhatsApp o agenda una llamada en el menú superior.
-Precios: Para un presupuesto preciso, contáctanos por WhatsApp o agenda una llamada.
+[Keep existing rules and add]
+7. Para imágenes: Describe y analiza contenido técnico
+8. Para voz: Mantén respuestas breves y claras
 `;
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const formData = await req.formData();
+    const message = formData.get('message') as string;
+    const image = formData.get('image') as File | null;
 
-    const model = genAI.getGenerativeModel({ 
+    // Handle image processing
+    let imagePart;
+    if (image) {
+      const imageBuffer = Buffer.from(await image.arrayBuffer());
+      imagePart = {
+        inlineData: {
+          data: imageBuffer.toString("base64"),
+          mimeType: image.type,
+        },
+      };
+    }
+
+    // Initialize model
+    const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp",
       generationConfig: {
         temperature: 0.7,
@@ -54,6 +67,7 @@ export async function POST(req: Request) {
       },
     });
 
+    // Start chat with history
     const chat = model.startChat({
       history: [
         {
@@ -62,29 +76,27 @@ export async function POST(req: Request) {
         },
         {
           role: "model",
-          parts: [{ text: "Entendido. Actuaré como el asistente virtual de Capital Code, ayudando a los clientes en español y siguiendo las pautas establecidas." }],
+          parts: [{ text: "Entendido. Actuaré como asistente virtual de Capital Code con capacidades mejoradas." }],
         },
       ],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1024,
-      },
     });
 
-    const result = await chat.sendMessage(message);
+    // Build message parts
+    const messageParts = [
+      { text: message },
+      ...(imagePart ? [imagePart] : []),
+    ];
+
+    // Get response
+    const result = await chat.sendMessage(messageParts);
     const response = await result.response;
     const text = response.text();
 
     return NextResponse.json({ response: text });
   } catch (error) {
-    console.error('Error in chat route:', error);
+    console.error('Chat error:', error);
     return NextResponse.json(
-      { 
-        error: 'Error en el servicio de chat',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Error en el servicio de chat' },
       { status: 500 }
     );
   }
