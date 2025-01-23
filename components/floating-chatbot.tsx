@@ -207,29 +207,44 @@ const FloatingChatbot = () => {
     <div className="fixed bottom-8 right-8 z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-blue-600 transition-colors"
+        className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-xl hover:shadow-2xl transition-all duration-300"
         aria-label="Abrir chat"
       >
-        {isOpen ? <IconX size={30} /> : <IconMessage2 size={30} />}
+        {isOpen ? (
+          <IconX size={30} className="hover:rotate-90 transition-transform" />
+        ) : (
+          <IconMessage2
+            size={30}
+            className="hover:scale-110 transition-transform"
+          />
+        )}
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-20 right-0 w-80 h-[500px] bg-white rounded-lg shadow-xl flex flex-col overflow-hidden">
-          <div className="p-4 bg-blue-500 text-white flex justify-between items-center">
-            <div>
-              <h3 className="text-lg font-semibold">Asistente Virtual</h3>
-              <p className="text-sm opacity-90">Capital Code</p>
+        <div className="absolute bottom-20 right-0 w-96 h-[600px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+          {/* Header */}
+          <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold">Asistente Virtual</h3>
+                <p className="text-sm opacity-90 font-medium">Capital Code</p>
+              </div>
+              <button
+                onClick={toggleMute}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+              >
+                {isMuted ? (
+                  <IconVolumeOff size={24} className="text-white/80" />
+                ) : (
+                  <IconVolume size={24} className="text-white/80" />
+                )}
+              </button>
             </div>
-            <button
-              onClick={toggleMute}
-              className="p-2 hover:bg-blue-600 rounded-full transition-colors"
-              aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-            >
-              {isMuted ? <IconVolumeOff size={24} /> : <IconVolume size={24} />}
-            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Messages Container */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -238,50 +253,56 @@ const FloatingChatbot = () => {
                 }`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-lg ${
+                  className={`max-w-[85%] p-4 rounded-2xl ${
                     message.type === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 text-gray-800"
+                      ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
+                      : "bg-white text-gray-800 shadow-sm border border-gray-200"
                   }`}
                 >
                   {message.image ? (
                     <img
                       src={message.image}
                       alt="Contenido subido"
-                      className="max-w-full h-32 object-cover rounded-lg"
+                      className="max-w-full h-40 object-cover rounded-lg mb-2"
                     />
                   ) : (
-                    message.content
+                    <p className="text-sm leading-relaxed">{message.content}</p>
                   )}
+                  <div className="mt-1 text-xs opacity-70">
+                    {message.type === "user" ? "Tú" : "Asistente"}
+                  </div>
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg flex items-center gap-2">
-                  {isSpeaking ? (
-                    <>
-                      <span className="animate-pulse">🔊</span>
-                      <span>Hablando...</span>
-                    </>
-                  ) : (
-                    "Procesando..."
-                  )}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce delay-200"></div>
+                    </div>
+                    <span className="text-sm">
+                      {isSpeaking ? "Generando respuesta..." : "Procesando..."}
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="p-4 border-t">
+          {/* Input Container */}
+          <div className="p-4 bg-white border-t border-gray-100">
             <form onSubmit={handleSendMessage} className="flex gap-2">
-              <div className="flex-1 flex gap-2">
+              <div className="flex-1 flex gap-2 relative">
                 <input
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Escribe o habla..."
-                  className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Escribe tu mensaje..."
+                  className="flex-1 p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 text-sm"
                   disabled={isListening}
                 />
                 <input
@@ -295,30 +316,41 @@ const FloatingChatbot = () => {
                 />
                 <label
                   htmlFor="image-upload"
-                  className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer"
+                  className="p-2 bg-white hover:bg-gray-50 text-gray-600 rounded-lg cursor-pointer border border-gray-200 transition-colors"
                 >
-                  📷
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M4 5h13v7h2V5c0-1.103-.897-2-2-2H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h8v-2H4V5z" />
+                    <path d="m8 11-3 4h11l-4-6-3 4z" />
+                    <path d="M19 14h-2v3h-3v2h3v3h2v-3h3v-2h-3z" />
+                  </svg>
                 </label>
               </div>
-              <button
-                type="button"
-                onClick={() => recognition.current?.start()}
-                className={`p-2 rounded-lg ${
-                  isListening
-                    ? "bg-red-500 text-white"
-                    : "bg-gray-100 hover:bg-gray-200"
-                }`}
-                disabled={!recognition.current}
-              >
-                <IconMicrophone size={20} />
-              </button>
-              <button
-                type="submit"
-                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                disabled={isLoading}
-              >
-                <IconSend size={20} />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => recognition.current?.start()}
+                  className={`p-3 rounded-xl transition-colors ${
+                    isListening
+                      ? "bg-red-500 text-white shadow-lg"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                  }`}
+                  disabled={!recognition.current}
+                >
+                  <IconMicrophone size={20} />
+                </button>
+                <button
+                  type="submit"
+                  className="p-3 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                  disabled={isLoading}
+                >
+                  <IconSend size={20} />
+                </button>
+              </div>
             </form>
           </div>
         </div>
