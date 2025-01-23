@@ -1,17 +1,29 @@
 "use client";
-
 import { useState, useRef, useEffect } from "react";
 import {
   IconMessage2,
   IconX,
   IconSend,
   IconMicrophone,
+  IconVolume,
+  IconVolumeOff,
 } from "@tabler/icons-react";
+
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
 
 interface Message {
   type: "user" | "bot";
   content: string;
   image?: string;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
 }
 
 const FloatingChatbot = () => {
@@ -20,46 +32,117 @@ const FloatingChatbot = () => {
     {
       type: "bot",
       content:
-        "¡Hola! Soy el asistente virtual de Capital Code. ¿En qué puedo ayudarte hoy?",
+        "¡Hola! Soy el asistente de Capital Code. ¿En qué puedo ayudarte hoy?",
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognition = useRef<any>(null);
+  const synthesis = useRef<SpeechSynthesis | null>(null);
+  const currentUtterance = useRef<SpeechSynthesisUtterance | null>(null);
 
-  // Speech synthesis
-  const speakMessage = (text: string) => {
-    if ("speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "es-ES";
-      setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
-    }
+  useEffect(() => {
+    const initializeSpeech = () => {
+      if (typeof window !== "undefined") {
+        const SpeechRecognition =
+          window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+          recognition.current = new SpeechRecognition();
+          recognition.current.lang = "es-ES";
+          recognition.current.interimResults = false;
+          recognition.current.continuous = false;
+
+          recognition.current.onresult = (event: SpeechRecognitionEvent) => {
+            const transcript = event.results[0][0].transcript;
+            setInputMessage(transcript.trim());
+          };
+
+          recognition.current.onerror = (event: Event) => {
+            console.error("Speech recognition error:", event);
+          };
+
+          recognition.current.onstart = () => setIsListening(true);
+          recognition.current.onend = () => setIsListening(false);
+        }
+
+        synthesis.current = window.speechSynthesis;
+        synthesis.current.onvoiceschanged = () => {
+          console.log("Available voices:", synthesis.current?.getVoices());
+        };
+      }
+    };
+
+    initializeSpeech();
+    return () => {
+      recognition.current?.stop();
+      synthesis.current?.cancel();
+    };
+  }, []);
+
+  const getVoice = () => {
+    if (!synthesis.current) return null;
+    const voices = synthesis.current.getVoices();
+    const preferredVoices = [
+      "Microsoft Helena",
+      "Google español",
+      "Paulina",
+      "Jorge",
+      "Español latinoamericano",
+    ];
+
+    return (
+      voices.find(
+        (v) =>
+          preferredVoices.some((name) => v.name.includes(name)) &&
+          v.lang.startsWith("es")
+      ) || voices[0]
+    );
   };
 
-  // Speech recognition
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        recognition.current = new SpeechRecognition();
-        recognition.current.lang = "es-ES";
-        recognition.current.interimResults = false;
+  const speakMessage = (text: string) => {
+    if (!synthesis.current || isMuted) return;
 
-        recognition.current.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript;
-          setInputMessage(transcript);
-        };
+    synthesis.current.cancel();
+    const processedText = text
+      .replace(/\[PAUSE\]/g, "") // Remove any existing pause markers
+      .replace(/([.!?])/g, "$1 ");
 
-        recognition.current.onstart = () => setIsListening(true);
-        recognition.current.onend = () => setIsListening(false);
-      }
+    const utterance = new SpeechSynthesisUtterance(processedText);
+    const voice = getVoice();
+
+    if (voice) {
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
     }
-  }, []);
+
+    utterance.rate = 0.9;
+    utterance.pitch = 0.95;
+    utterance.volume = 1;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    utterance.onboundary = (event) => {
+      if (event.name === "sentence") {
+        synthesis.current?.pause();
+        synthesis.current?.resume();
+      }
+    };
+
+    currentUtterance.current = utterance;
+    synthesis.current.speak(utterance);
+  };
+
+  const toggleMute = () => {
+    synthesis.current?.cancel();
+    setIsMuted(!isMuted);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -79,28 +162,25 @@ const FloatingChatbot = () => {
     setIsLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("message", userMessage);
-
       const response = await fetch("/api/chat", {
         method: "POST",
-        body: formData,
+        body: JSON.stringify({ message: userMessage }),
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) throw new Error("Error en la respuesta");
 
-      const data = await response.json();
-      const botMessage = data.response;
+      const { response: botMessage } = await response.json();
 
       setMessages((prev) => [...prev, { type: "bot", content: botMessage }]);
-      speakMessage(botMessage);
+      !isMuted && speakMessage(botMessage);
     } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           type: "bot",
           content:
-            "Lo siento, ha ocurrido un error. Por favor, intenta de nuevo más tarde.",
+            "Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.",
         },
       ]);
     } finally {
@@ -108,8 +188,7 @@ const FloatingChatbot = () => {
     }
   };
 
-  // Add image handling
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       setMessages((prev) => [
@@ -136,9 +215,18 @@ const FloatingChatbot = () => {
 
       {isOpen && (
         <div className="absolute bottom-20 right-0 w-80 h-[500px] bg-white rounded-lg shadow-xl flex flex-col overflow-hidden">
-          <div className="p-4 bg-blue-500 text-white">
-            <h3 className="text-lg font-semibold">Asistente Virtual</h3>
-            <p className="text-sm opacity-90">Capital Code</p>
+          <div className="p-4 bg-blue-500 text-white flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Asistente Virtual</h3>
+              <p className="text-sm opacity-90">Capital Code</p>
+            </div>
+            <button
+              onClick={toggleMute}
+              className="p-2 hover:bg-blue-600 rounded-full transition-colors"
+              aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+            >
+              {isMuted ? <IconVolumeOff size={24} /> : <IconVolume size={24} />}
+            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -159,7 +247,7 @@ const FloatingChatbot = () => {
                   {message.image ? (
                     <img
                       src={message.image}
-                      alt="Uploaded content"
+                      alt="Contenido subido"
                       className="max-w-full h-32 object-cover rounded-lg"
                     />
                   ) : (
@@ -170,8 +258,15 @@ const FloatingChatbot = () => {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg">
-                  Escribiendo...
+                <div className="bg-gray-100 text-gray-800 p-3 rounded-lg flex items-center gap-2">
+                  {isSpeaking ? (
+                    <>
+                      <span className="animate-pulse">🔊</span>
+                      <span>Hablando...</span>
+                    </>
+                  ) : (
+                    "Procesando..."
+                  )}
                 </div>
               </div>
             )}
@@ -185,8 +280,9 @@ const FloatingChatbot = () => {
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Escribe tu mensaje..."
+                  placeholder="Escribe o habla..."
                   className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isListening}
                 />
                 <input
                   type="file"
@@ -212,6 +308,7 @@ const FloatingChatbot = () => {
                     ? "bg-red-500 text-white"
                     : "bg-gray-100 hover:bg-gray-200"
                 }`}
+                disabled={!recognition.current}
               >
                 <IconMicrophone size={20} />
               </button>
