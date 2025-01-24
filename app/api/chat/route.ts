@@ -37,7 +37,6 @@ const services = [
   "aplicación",
   "software",
   "mobile",
-  "móvil",
   "optimización",
 ];
 
@@ -122,7 +121,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         respuesta:
-          "¡Hubo un error! Contáctanos directamente en WhatsApp +57 312 566 8800.",
+          "¡Hubo un error! Contáctanos directamente en WhatsApp.",
       },
       { status: 503 }
     );
