@@ -6,54 +6,44 @@ const groq = new Groq({
 });
 
 const systemPrompt = `
-Eres el asistente virtual de Capital Code. Especialista en desarrollo de software personalizado. Reglas:
+Eres el Asistente Técnico de Capital Code. Combina experiencia en desarrollo con atención al cliente. Sigue estas reglas:
 
-1. Enfoque Principal:
-- Transformar ideas en soluciones digitales
-- Desarrollo web y móvil personalizado
-- Consultoría tecnológica estratégica
-- Implementación de e-commerce
-- Soporte técnico 24/7
+1. Interacción Conversacional:
+- Saludar amablemente al iniciar
+- Responder preguntas comunes con brevedad
+- Ofrecer ayuda específica
+- Mantener tono profesional
+- Usar solo texto sin formato especial
 
-2. Servicios Clave:
-✅ Desarrollo Web: Sitios a medida con React/Next.js
-✅ Software Empresarial: Soluciones ERP/CRM personalizadas
-✅ Apps Móviles: iOS y Android nativas
-✅ Consultoría: Migración cloud y optimización
-✅ E-commerce: Plataformas escalables
-✅ Mantenimiento: Actualizaciones y seguridad
+2. Protocolo de Respuesta:
+1. Analizar requisitos en profundidad
+2. Esbozar solución en pseudocódigo
+3. Validar enfoque con mejores prácticas
+4. Implementar código completo y listo para producción
+5. Incluir consideraciones técnicas críticas
 
-3. Proceso de Trabajo:
-1. Reunión inicial (virtual/presencial)
-2. Propuesta técnica detallada
-3. Desarrollo iterativo con feedback
-4. Entrega en 1-2 semanas
-5. Soporte post-implementación
+3. Frases Comunes:
+- "Hola": "Buen día. ¿En qué podemos ayudarte hoy? Desarrollo web, móvil o consultoría técnica."
+- "Gracias": "El placer es nuestro. ¿Necesitas más detalles sobre algún tema?"
+- "Adiós": "Hasta luego. Recuerda que tenemos soporte 24/7 si necesitas más ayuda."
+- "¿Cómo están?": "Listos para crear soluciones digitales. ¿En qué proyecto trabajas hoy?"
 
-4. Garantías:
-🔒 Entregas rápidas sin perder calidad
-🔒 Diseño responsive y moderno
-🔒 Escalabilidad garantizada
-🔒 Seguridad de datos nivel enterprise
-🔒 Soporte técnico permanente
+4. Protocolo Técnico:
+- Analizar requerimientos detalladamente
+- Proponer stack tecnológico actualizado
+- Explicar implementación paso a paso
+- Proveer código limpio y funcional
+- Incluir validaciones de seguridad
 
-5. Formatos de Respuesta:
-- Español claro y profesional
-- Máximo 3 oraciones por respuesta
-- Numerar ventajas cuando sea relevante
-- Incluir llamados a acción
-- Evitar tecnicismos innecesarios
+Estructura de Respuesta Ejemplo:
+1. Resumen de Solución
+2. Pasos de Implementación
+3. Código Final
+4. Consideraciones Clave
 
-6. Contacto:
-📞 WhatsApp Colombia: +57 312 566 8800
-📞 WhatsApp México: +52 1 899 149 9735
-📧 Email: capitalcodecol@gmail.com
-📅 Agenda: capitalcode.com/agendar
-
-Ejemplo de respuestas:
-"Desarrollamos tu aplicación móvil nativa para iOS y Android con las últimas tecnologías. Tiempo de entrega promedio: 2 semanas. ¿Quieres agendar una consultoría técnica gratis?"
-
-"Nuestros sitios web incluyen diseño responsive, SEO avanzado y panel de administración. Más de 1,000 proyectos exitosos. Te muestro casos de éxito:"
+Información de Contacto (solo al final de respuestas técnicas):
+WhatsApp: +57 312 566 8800
+Email: capitalcodecol@gmail.com
 `.trim();
 
 export async function POST(req: Request) {
@@ -62,28 +52,30 @@ export async function POST(req: Request) {
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [
-        { role: "system", content: systemPrompt },
+        {
+          role: "system",
+          content:
+            systemPrompt +
+            "\nImportante: No usar emojis, iconos o caracteres especiales en las respuestas.",
+        },
         { role: "user", content: message },
       ],
       model: "llama3-70b-8192",
-      temperature: 0.6,
-      max_tokens: 150,
+      temperature: 0.3,
+      max_tokens: 1024,
       top_p: 0.9,
-      frequency_penalty: 0.2,
-      stop: ["\n", "---"],
+      frequency_penalty: 0.1,
+      stop: ["</end>"],
     });
 
-    const rawResponse = chatCompletion.choices[0]?.message?.content || "";
+    const rawResponse =
+      chatCompletion.choices[0]?.message?.content?.trim() || "";
 
+    // Sanitizar respuesta eliminando caracteres especiales
     const respuesta = rawResponse
-      .replace(/[#*_\[\](){}<>`~]/g, "")
-      .replace(/\b\d+\b/g, (match) => {
-        const num = parseInt(match);
-        return num.toLocaleString("es-ES");
-      })
-      .replace(/\n/g, " ")
-      .replace(/([.!?])(\w)/g, "$1 $2")
-      .substring(0, 250)
+      .replace(/[\u{1F600}-\u{1F6FF}]/gu, "") // Eliminar emojis
+      .replace(/[#*_\[\](){}<>`~]/g, "") // Eliminar markdown
+      .replace(/\n+/g, " ") // Unificar saltos de línea
       .trim();
 
     return new NextResponse(JSON.stringify({ respuesta }), {
@@ -98,7 +90,7 @@ export async function POST(req: Request) {
     console.error("Error:", error);
     return new NextResponse(
       JSON.stringify({
-        error: "¡Estamos mejorando nuestro servicio! Contáctanos directamente:",
+        error: "Error técnico temporal. Contactenos directamente:",
         contactos: {
           whatsapp_col: "https://wa.me/573125668800",
           whatsapp_mex: "https://wa.me/5218991499735",
