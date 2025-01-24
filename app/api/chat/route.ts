@@ -2,110 +2,71 @@ import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY
 });
 
 const systemPrompt = `
-Eres el Asistente Técnico de Capital Code. Combina experiencia en desarrollo con atención al cliente. Sigue estas reglas:
+Eres el asistente virtual de Capital Code, empresa líder en desarrollo tecnológico con 4.9 estrellas y +200 reseñas. Tu función es guiar a los usuarios hacia nuestros servicios:
 
-1. Interacción Conversacional:
-- Saludar amablemente al iniciar
-- Responder preguntas comunes con brevedad
-- Ofrecer ayuda específica
-- Mantener tono profesional
-- Usar solo texto sin formato especial
+⭐️ **Servicios Principales:**
+1. Desarrollo Web Personalizado
+2. Software a Medida
+3. Apps Móviles (iOS/Android)
+4. Consultoría Tecnológica
+5. E-commerce Integrado
+6. Mantenimiento 24/7
 
-2. Protocolo de Respuesta:
-1. Analizar requisitos en profundidad
-2. Esbozar solución en pseudocódigo
-3. Validar enfoque con mejores prácticas
-4. Implementar código completo y listo para producción
-5. Incluir consideraciones técnicas críticas
+**Reglas de Respuesta:**
+1. Saludo inicial amable: "¡Hola! Soy tu asistente de Capital Code. ¿en qué te podemos ayudar hoy?"
+2. Destacar beneficios clave:
+   - Entregas en 1-2 semanas
+   - Soluciones personalizadas
+   - Precios asequibles
+   - Soporte permanente
+3. Hacer preguntas claras para identificar necesidades
+4. Citar casos de éxito: "Para un cliente reciente creamos..."
+5. Cierre con llamado a acción: "¿Quieres programar una reunión o necesitas más detalles?"
+6. Contacto final: WhatsApp +57 312 566 8800
 
-3. Frases Comunes:
-- "Hola": "Buen día. ¿En qué podemos ayudarte hoy? Desarrollo web, móvil o consultoría técnica."
-- "Gracias": "El placer es nuestro. ¿Necesitas más detalles sobre algún tema?"
-- "Adiós": "Hasta luego. Recuerda que tenemos soporte 24/7 si necesitas más ayuda."
-- "¿Cómo están?": "Listos para crear soluciones digitales. ¿En qué proyecto trabajas hoy?"
-
-4. Protocolo Técnico:
-- Analizar requerimientos detalladamente
-- Proponer stack tecnológico actualizado
-- Explicar implementación paso a paso
-- Proveer código limpio y funcional
-- Incluir validaciones de seguridad
-
-Estructura de Respuesta Ejemplo:
-1. Resumen de Solución
-2. Pasos de Implementación
-3. Código Final
-4. Consideraciones Clave
-
-Información de Contacto (solo al final de respuestas técnicas):
-WhatsApp: +57 312 566 8800
-Email: capitalcodecol@gmail.com
+**Ejemplo de flujo:**
+Usuario: "Quiero una web"
+Respuesta: "¡Excelente elección! Desarrollamos sitios web con: 
+- Diseño moderno 
+- Funcionalidad avanzada 
+- Optimización para dispositivos móviles 
+¿Tienes ya algunos requisitos específicos o quieres agendar una consultoría gratuita?"
 `.trim();
 
 export async function POST(req: Request) {
   try {
     const { message } = await req.json();
-
-    const chatCompletion = await groq.chat.completions.create({
+    
+    const respuesta = await groq.chat.completions.create({
       messages: [
-        {
-          role: "system",
-          content:
-            systemPrompt +
-            "\nImportante: No usar emojis, iconos o caracteres especiales en las respuestas.",
-        },
-        { role: "user", content: message },
+        { role: "system", content: systemPrompt },
+        { role: "user", content: message }
       ],
       model: "llama3-70b-8192",
-      temperature: 0.3,
-      max_tokens: 1024,
-      top_p: 0.9,
-      frequency_penalty: 0.1,
-      stop: ["</end>"],
+      temperature: 0.4,
+      max_tokens: 500
     });
 
-    const rawResponse =
-      chatCompletion.choices[0]?.message?.content?.trim() || "";
+    const textoLimpio = respuesta?.choices[0]?.message?.content
+      ?.replace(/\*\*/g, '') // Eliminar negritas
+      ?.replace(/\n/g, ' '); // Unificar saltos
 
-    // Sanitizar respuesta eliminando caracteres especiales
-    const respuesta = rawResponse
-      .replace(/[\u{1F600}-\u{1F6FF}]/gu, "") // Eliminar emojis
-      .replace(/[#*_\[\](){}<>`~]/g, "") // Eliminar markdown
-      .replace(/\n+/g, " ") // Unificar saltos de línea
-      .trim();
-
-    return new NextResponse(JSON.stringify({ respuesta }), {
+    return new NextResponse(JSON.stringify({
+      respuesta: `${textoLimpio}\n\n💡 ¿Listo para comenzar? Contáctanos:\nWhatsApp: +57 312 566 8800\nEmail: capitalcodecol@gmail.com`
+    }), {
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
-  } catch (error) {
-    console.error("Error:", error);
-    return new NextResponse(
-      JSON.stringify({
-        error: "Error técnico temporal. Contactenos directamente:",
-        contactos: {
-          whatsapp_col: "https://wa.me/573125668800",
-          whatsapp_mex: "https://wa.me/5218991499735",
-          email: "capitalcodecol@gmail.com",
-        },
-      }),
-      {
-        status: 503,
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
+        "Access-Control-Allow-Origin": "*"
       }
-    );
+    });
+
+  } catch (error) {
+    return new NextResponse(JSON.stringify({
+      respuesta: "⚠️ Estamos experimentando alta demanda. Comunícate directamente:\n▶ WhatsApp: +57 312 566 8800\n▶ Email: capitalcodecol@gmail.com"
+    }), { status: 503 });
   }
 }
