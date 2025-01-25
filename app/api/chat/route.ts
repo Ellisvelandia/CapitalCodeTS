@@ -5,7 +5,7 @@ import nlp from "compromise";
 // Initialize Groq client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// Updated system prompt with contact reference only in specific cases
+// Updated system prompt to allow for more dynamic responses
 const systemPrompt = `
 Capital Code - Conversación fluida y clara:
 1. Detectar servicio solicitado (web, software u optimización)
@@ -14,12 +14,14 @@ Capital Code - Conversación fluida y clara:
    - Cuando el usuario muestre interés claro
    - Al final de respuestas sobre precios/tiempos
    - En mensajes de seguimiento o despedida
+4. Responder de manera más conversacional y menos mecánica, adaptando el tono según el contexto.
 
 Ejemplos:
 - "¡Claro! Desarrollamos sitios web personalizados en 10 días."
 - "Software a medida en 2 semanas. ¿Te gustaría más información?"
 - "¿Buscas una web? Desde $300 USD. ¡Agenda una consulta gratis!"
-- "¿Necesitas ayuda para decidir? Estamos disponibles para asesorarte"
+- "¿Necesitas ayuda para decidir? Estamos disponibles para asesorarte."
+- "Entiendo que estás buscando opciones. ¿Te gustaría saber más sobre nuestros servicios?"
 `.trim();
 
 // ... (rest of the typoMap, services, detectIntent, and preprocessMessage functions remain unchanged)
@@ -43,7 +45,15 @@ export async function POST(req: Request) {
     const preprocessMessage = (message: string) => {
       // Simulate preprocessing and intent detection
       // This is a placeholder for actual preprocessing and intent detection logic
-      return { processedMessage: message, intent: "general" };
+      let intent = "general"; // Default intent
+      if (message.includes("web")) {
+        intent = "web";
+      } else if (message.includes("software")) {
+        intent = "software";
+      } else if (message.includes("optimización")) {
+        intent = "optimización";
+      }
+      return { processedMessage: message, intent };
     };
     const { processedMessage, intent } = preprocessMessage(message);
 
