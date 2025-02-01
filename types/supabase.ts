@@ -1,3 +1,8 @@
+// types/supabase.ts
+
+// Define the Trigger type for functions that return a database trigger.
+export type Trigger = unknown;
+
 export type CustomerRow = {
   id: string;
   name: string;

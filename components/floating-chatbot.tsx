@@ -39,59 +39,82 @@ export default function FloatingChatbot() {
   });
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [formError, setFormError] = useState("");
-  const [spanishVoice, setSpanishVoice] = useState<SpeechSynthesisVoice | null>(
-    null
-  );
+  const [spanishVoice, setSpanishVoice] = useState<SpeechSynthesisVoice | null>(null);
+
+  // Define preferred voice settings as state (you can later allow users to modify these)
+  const [voiceSettings] = useState({
+    rate: 1.0, // Normal speed for a more natural tone
+    pitch: 1.0, // Normal pitch for a human-like sound
+    volume: 1.0,
+    preferredLanguage: "es-ES",
+    fallbackLanguage: "es-US", // Fallback if preferred voice not found
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Browser feature detection for speechSynthesis
+  // Set up a Spanish voice with a list of preferred voices.
   useEffect(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
 
-    const handleVoicesChanged = () => {
+    const handleVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      const foundVoice = voices.find(
-        (voice) =>
-          voice.lang.startsWith("es") ||
-          voice.name.toLowerCase().includes("spanish")
-      );
-      setSpanishVoice(foundVoice || null);
+      const selectedVoice = voices.find((voice) => voice.name === 'Microsoft Sabina - Spanish (Mexico)') || voices[0];
+      setSpanishVoice(selectedVoice);
     };
 
-    window.speechSynthesis.addEventListener(
-      "voiceschanged",
-      handleVoicesChanged
-    );
-    handleVoicesChanged(); // initial check
+    window.speechSynthesis.onvoiceschanged = handleVoices;
+    handleVoices(); // Initial check
 
     return () => {
-      window.speechSynthesis.removeEventListener(
-        "voiceschanged",
-        handleVoicesChanged
-      );
+      window.speechSynthesis.onvoiceschanged = null;
     };
   }, []);
 
-  // Scroll chat to the bottom when messages change
+  // Scroll chat to the bottom when messages change.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Helper: speak a message using speech synthesis (if not muted)
+  // Helper: speak a message using speech synthesis with improved settings.
   const speakMessage = (text: string) => {
-    if (isMuted || typeof window === "undefined" || !window.speechSynthesis)
-      return;
-    const utterance = new SpeechSynthesisUtterance(text);
+    if (isMuted || typeof window === "undefined" || !window.speechSynthesis) return;
+
+    // Clean text for better pronunciation: remove inverted punctuation and collapse extra spaces.
+    const cleanText = text
+      .replace(/¡/g, "")
+      .replace(/¿/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // Create an utterance with the cleaned text.
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
     if (spanishVoice) {
-      utterance.lang = spanishVoice.lang;
       utterance.voice = spanishVoice;
+      utterance.lang = spanishVoice.lang;
+      // Use the custom voice settings.
+      utterance.rate = voiceSettings.rate;
+      utterance.pitch = voiceSettings.pitch;
+      utterance.volume = voiceSettings.volume;
     } else {
-      utterance.lang = "es-ES";
+      // Fallback to browser's default Spanish settings.
+      utterance.lang = voiceSettings.preferredLanguage;
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
     }
+
+    // Add slight pauses for punctuation for better clarity.
+    utterance.text = cleanText.replace(/([,.])/g, "$1 ");
+
+    // Error handling.
+    utterance.onerror = (event) => {
+      console.error("Speech synthesis error:", event.error);
+    };
+
     window.speechSynthesis.speak(utterance);
   };
 
-  // Enhanced email validation
+  // Enhanced email validation.
   const isValidEmail = (email: string) => {
     const pattern =
       /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -102,20 +125,23 @@ export default function FloatingChatbot() {
     return true;
   };
 
-  // Function to create a customer record in Supabase if none exists
+  /**
+   * Create or upsert a customer record in Supabase.
+   * Uses the upsert method with onConflict set to "email" so that if a record
+   * with the same email exists, it returns that record rather than creating a duplicate.
+   */
   const createCustomer = async (): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from("customers")
-        .insert({ name: customerInfo.name, email: customerInfo.email })
+        .upsert({ name: customerInfo.name, email: customerInfo.email }, { onConflict: "email" })
         .select();
+
       if (error || !data || data.length === 0) {
-        setFormError(
-          "Error creando el cliente: " + (error?.message || "unknown error")
-        );
+        setFormError("Error creando el cliente: " + (error?.message || "unknown error"));
         return false;
       }
-      // Update customerInfo with the new id
+      // Update customerInfo with the new or existing id.
       setCustomerInfo((prev) => ({ ...prev, id: data[0].id }));
       return true;
     } catch (err) {
@@ -124,7 +150,7 @@ export default function FloatingChatbot() {
     }
   };
 
-  // Handle customer form submission (to update or create customer info)
+  // Handle customer form submission.
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerInfo.name || !customerInfo.email) {
@@ -133,17 +159,17 @@ export default function FloatingChatbot() {
     }
     if (!isValidEmail(customerInfo.email)) return;
 
-    // Create a new customer record if no customer id exists
+    // Create or upsert the customer record if no customer id exists.
     if (!customerInfo.id) {
       const created = await createCustomer();
       if (!created) return;
     }
-    // Hide the form after successful customer creation
+    // Hide the form after successful customer creation/upsert.
     setShowCustomerForm(false);
     setFormError("");
   };
 
-  // Handle sending a chat message
+  // Handle sending a chat message.
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
@@ -177,10 +203,7 @@ export default function FloatingChatbot() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (
-          data.error === "invalid_customer" ||
-          data.error === "customer_not_found"
-        ) {
+        if (data.error === "invalid_customer" || data.error === "customer_not_found") {
           setShowCustomerForm(true);
           setFormError("Necesitamos actualizar tus datos");
           throw new Error("Invalid customer session");
@@ -246,11 +269,7 @@ export default function FloatingChatbot() {
                 onClick={() => setIsMuted(!isMuted)}
                 className="p-1.5 hover:bg-white/10 rounded-full"
               >
-                {isMuted ? (
-                  <FaVolumeMute size={20} />
-                ) : (
-                  <FaVolumeUp size={20} />
-                )}
+                {isMuted ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
               </button>
             </div>
           </div>
@@ -318,9 +337,7 @@ export default function FloatingChatbot() {
                 {messages.map((msg, i) => (
                   <div
                     key={i}
-                    className={`flex ${
-                      msg.type === "user" ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
                       className={`p-3 rounded-xl max-w-[80%] ${
@@ -375,9 +392,7 @@ export default function FloatingChatbot() {
                     type="submit"
                     disabled={isLoading}
                     className={`p-2 bg-blue-600 text-white rounded-lg transition-colors ${
-                      isLoading
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-blue-700"
+                      isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
                     }`}
                   >
                     <FaPaperPlane size={20} />

@@ -34,7 +34,6 @@ type ResponseBody = {
 // Initialize Groq with your API key.
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-// The system prompt instructs the assistant on how to respond.
 const SYSTEM_PROMPT = `
 Capital Code - Asistente Especializado:
 - Usa la conversación previa para mantener contexto
@@ -42,7 +41,6 @@ Capital Code - Asistente Especializado:
 - Menciona plazos y rangos de precios si aplica
 `.trim();
 
-// The intent detection prompt instructs Groq to extract a one-word intent.
 const INTENT_DETECTION_PROMPT = `
 Clasifica la intención en: web, software, optimización o general.
 Responde solo con la palabra clave en minúsculas.
@@ -141,9 +139,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * detectIntent uses the lightweight "mixtral-8x7b-32768" model to determine the user's intent.
- */
 async function detectIntent(message: string): Promise<string> {
   try {
     const response = await groq.chat.completions.create({
@@ -163,16 +158,6 @@ async function detectIntent(message: string): Promise<string> {
   }
 }
 
-/**
- * processMessage generates the assistant's response.
- *
- * It builds a conversation context that includes:
- * - A system prompt.
- * - Any previous conversation history.
- * - The current user message.
- *
- * This function uses the new Meta Llama 3.3 model ("llama-3.3-70b-versatile").
- */
 async function processMessage(message: string, history: ChatMessage[]) {
   const messages: ChatMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
