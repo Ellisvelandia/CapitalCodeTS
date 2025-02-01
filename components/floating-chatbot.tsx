@@ -1,170 +1,157 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+
+import { useEffect, useRef, useState } from "react";
 import {
-  IconMessage2,
-  IconX,
-  IconSend,
-  IconMicrophone,
-  IconVolume,
-  IconVolumeOff,
-} from "@tabler/icons-react";
+  FaTimes,
+  FaComment,
+  FaVolumeUp,
+  FaVolumeMute,
+  FaPaperPlane,
+} from "react-icons/fa";
+import { supabase } from "@/lib/supabaseClient"; // Ensure this is correctly imported
 
-declare global {
-  interface Window {
-    webkitSpeechRecognition: any;
-  }
-}
-
-interface Message {
+interface ChatMessage {
   type: "user" | "bot";
   content: string;
+  metadata?: {
+    detectedIntent?: string;
+    responseTime?: number;
+  };
 }
 
-const FloatingChatbot = () => {
+interface CustomerInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export default function FloatingChatbot() {
+  // Chat state
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      type: "bot",
-      content:
-        "¡Hola! Soy el asistente de Capital Code. ¿En qué puedo ayudarte hoy?",
-    },
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-
+  const [inputMessage, setInputMessage] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    id: "",
+    name: "",
+    email: "",
+  });
+  const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [spanishVoice, setSpanishVoice] = useState<SpeechSynthesisVoice | null>(
+    null
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognition = useRef<any>(null);
-  const synthesis = useRef<SpeechSynthesis | null>(null);
-  const currentUtterance = useRef<SpeechSynthesisUtterance | null>(null);
 
+  // Browser feature detection for speechSynthesis
   useEffect(() => {
-    const initializeSpeech = () => {
-      if (typeof window !== "undefined") {
-        // Configuración de reconocimiento de voz
-        if ("webkitSpeechRecognition" in window) {
-          recognition.current = new window.webkitSpeechRecognition();
-          recognition.current.continuous = false;
-          recognition.current.interimResults = false;
-          recognition.current.lang = "es-ES";
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
 
-          recognition.current.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            setInputMessage(transcript.trim());
-          };
-
-          recognition.current.onerror = (event: any) => {
-            console.error("Error de reconocimiento:", event.error);
-          };
-
-          recognition.current.onstart = () => setIsListening(true);
-          recognition.current.onend = () => setIsListening(false);
-        }
-
-        // Configuración de síntesis de voz
-        synthesis.current = window.speechSynthesis;
-
-        // Precargar voces
-        const checkVoices = () => {
-          if (synthesis.current?.getVoices().length) {
-            console.log("Voces disponibles:", synthesis.current.getVoices());
-          } else {
-            setTimeout(checkVoices, 100);
-          }
-        };
-        checkVoices();
-      }
+    const handleVoicesChanged = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const foundVoice = voices.find(
+        (voice) =>
+          voice.lang.startsWith("es") ||
+          voice.name.toLowerCase().includes("spanish")
+      );
+      setSpanishVoice(foundVoice || null);
     };
 
-    initializeSpeech();
-    return () => {
-      // Limpieza segura
-      if (recognition.current) {
-        recognition.current.stop();
-        recognition.current = null;
-      }
+    window.speechSynthesis.addEventListener(
+      "voiceschanged",
+      handleVoicesChanged
+    );
+    handleVoicesChanged(); // initial check
 
-      if (synthesis.current) {
-        synthesis.current.cancel();
-        synthesis.current = null;
-      }
+    return () => {
+      window.speechSynthesis.removeEventListener(
+        "voiceschanged",
+        handleVoicesChanged
+      );
     };
   }, []);
 
-  const speakMessage = (text: string) => {
-    if (!synthesis.current || isMuted) return;
-
-    // Cancelar cualquier reproducción pendiente
-    synthesis.current.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(
-      text.replace(/([.!?])/g, "$1 ") // Mejorar pausas
-    );
-
-    // Selección de voz priorizando Google
-    const voices = synthesis.current.getVoices();
-    const spanishVoice =
-      voices.find(
-        (v) => v.name.includes("Google español") && v.lang.startsWith("es-ES")
-      ) || voices.find((v) => v.lang.startsWith("es"));
-
-    if (spanishVoice) {
-      utterance.voice = spanishVoice;
-      utterance.lang = spanishVoice.lang;
-    }
-
-    // Configuración optimizada
-    utterance.rate = 1.1;
-    utterance.pitch = 1.0;
-    utterance.volume = 1;
-
-    // Manejo de errores mejorado
-    const errorHandler = (event: SpeechSynthesisErrorEvent) => {
-      console.warn(`Error de voz (${event.error}):`, event);
-
-      if (event.error === "interrupted") {
-        setTimeout(() => {
-          synthesis.current?.speak(utterance);
-        }, 200);
-      }
-    };
-
-    utterance.onerror = errorHandler;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      currentUtterance.current = null;
-    };
-
-    // Delay para sincronización
-    setTimeout(() => {
-      try {
-        currentUtterance.current = utterance;
-        synthesis.current?.speak(utterance);
-      } catch (error) {
-        console.error("Error crítico de síntesis:", error);
-      }
-    }, 150);
-  };
-
-  const toggleMute = () => {
-    synthesis.current?.cancel();
-    setIsMuted(!isMuted);
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Scroll chat to the bottom when messages change
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
+  // Helper: speak a message using speech synthesis (if not muted)
+  const speakMessage = (text: string) => {
+    if (isMuted || typeof window === "undefined" || !window.speechSynthesis)
+      return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (spanishVoice) {
+      utterance.lang = spanishVoice.lang;
+      utterance.voice = spanishVoice;
+    } else {
+      utterance.lang = "es-ES";
+    }
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Enhanced email validation
+  const isValidEmail = (email: string) => {
+    const pattern =
+      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!pattern.test(email)) {
+      setFormError("Por favor ingrese un correo electrónico válido");
+      return false;
+    }
+    return true;
+  };
+
+  // Function to create a customer record in Supabase if none exists
+  const createCustomer = async (): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .insert({ name: customerInfo.name, email: customerInfo.email })
+        .select();
+      if (error || !data || data.length === 0) {
+        setFormError(
+          "Error creando el cliente: " + (error?.message || "unknown error")
+        );
+        return false;
+      }
+      // Update customerInfo with the new id
+      setCustomerInfo((prev) => ({ ...prev, id: data[0].id }));
+      return true;
+    } catch (err) {
+      setFormError("Error creando el cliente");
+      return false;
+    }
+  };
+
+  // Handle customer form submission (to update or create customer info)
+  const handleCustomerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customerInfo.name || !customerInfo.email) {
+      setFormError("Por favor complete todos los campos");
+      return;
+    }
+    if (!isValidEmail(customerInfo.email)) return;
+
+    // Create a new customer record if no customer id exists
+    if (!customerInfo.id) {
+      const created = await createCustomer();
+      if (!created) return;
+    }
+    // Hide the form after successful customer creation
+    setShowCustomerForm(false);
+    setFormError("");
+  };
+
+  // Handle sending a chat message
+  const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || isLoading) return;
+    // If there is no customer id, prompt the user to fill out the customer form.
+    if (!customerInfo.id) {
+      setShowCustomerForm(true);
+      return;
+    }
 
     const userMessage = inputMessage.trim();
     setInputMessage("");
@@ -172,33 +159,57 @@ const FloatingChatbot = () => {
     setIsLoading(true);
 
     try {
+      const history = messages.map((msg) => ({
+        role: msg.type === "bot" ? "assistant" : "user",
+        content: msg.content,
+      }));
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({
+          message: userMessage,
+          conversationHistory: history,
+          customerInfo,
+        }),
       });
-
-      if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
 
       const data = await response.json();
 
-      if (!data.respuesta) throw new Error("Respuesta vacía del servidor");
-
-      setMessages((prev) => [
-        ...prev,
-        { type: "bot", content: data.respuesta },
-      ]);
-
-      if (!isMuted) {
-        speakMessage(data.respuesta.replace(/(\d+)/g, " $1 ")); // Mejorar números
+      if (!response.ok) {
+        if (
+          data.error === "invalid_customer" ||
+          data.error === "customer_not_found"
+        ) {
+          setShowCustomerForm(true);
+          setFormError("Necesitamos actualizar tus datos");
+          throw new Error("Invalid customer session");
+        }
+        throw new Error(data.error || `Error: ${response.status}`);
       }
-    } catch (error) {
-      console.error("Error completo:", error);
+
       setMessages((prev) => [
         ...prev,
         {
           type: "bot",
-          content: "⚠️ Error temporal. Contáctenos directamente:",
+          content: data.respuesta,
+          metadata: {
+            detectedIntent: data.metadata?.detectedIntent,
+            responseTime: data.metadata?.responseTime,
+          },
+        },
+      ]);
+
+      speakMessage(data.respuesta);
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "bot",
+          content: error.message.includes("temporal")
+            ? "⚠️ Error temporal. Contacta: capitalcodecol@gmail.com"
+            : "⚠️ Necesitamos verificar tus datos. Completa el formulario nuevamente.",
         },
       ]);
     } finally {
@@ -208,134 +219,175 @@ const FloatingChatbot = () => {
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
+      {/* Chat Toggle Button */}
       <button
+        aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all hover:scale-105"
+        className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all"
       >
-        {isOpen ? (
-          <IconX size={28} className="animate-spin-once" />
-        ) : (
-          <IconMessage2 size={28} />
-        )}
+        {isOpen ? <FaTimes size={28} /> : <FaComment size={28} />}
       </button>
 
+      {/* Chat Window */}
       {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/30 sm:hidden z-40"
-            onClick={() => setIsOpen(false)}
-          />
-
-          <div className="fixed bottom-0 right-0 sm:absolute sm:bottom-20 w-full sm:w-96 h-[85vh] sm:h-[600px] bg-white rounded-t-xl sm:rounded-xl shadow-2xl flex flex-col z-50 transform transition-transform duration-200">
-            {/* Header */}
-            <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white flex justify-between items-center">
-              <div>
-                <h2 className="font-bold text-lg">Asistente Virtual</h2>
-                <p className="text-sm opacity-90">Capital Code</p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={toggleMute}
-                  className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
-                  title={isMuted ? "Activar sonido" : "Silenciar"}
-                >
-                  {isMuted ? (
-                    <IconVolumeOff size={20} />
-                  ) : (
-                    <IconVolume size={20} />
-                  )}
-                </button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-1.5 sm:hidden hover:bg-white/10 rounded-full"
-                >
-                  <IconX size={20} />
-                </button>
-              </div>
+        <div
+          role="dialog"
+          aria-labelledby="chatbot-heading"
+          className="fixed bottom-20 right-0 w-full sm:w-96 h-[70vh] bg-white rounded-t-xl shadow-xl flex flex-col"
+        >
+          {/* Chat Header */}
+          <div className="p-4 bg-blue-600 text-white flex justify-between items-center rounded-t-xl">
+            <h2 id="chatbot-heading" className="font-bold text-lg">
+              Asistente Virtual
+            </h2>
+            <div className="flex gap-2">
+              <button
+                aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+                onClick={() => setIsMuted(!isMuted)}
+                className="p-1.5 hover:bg-white/10 rounded-full"
+              >
+                {isMuted ? (
+                  <FaVolumeMute size={20} />
+                ) : (
+                  <FaVolumeUp size={20} />
+                )}
+              </button>
             </div>
+          </div>
 
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${
-                    message.type === "user" ? "justify-end" : "justify-start"
-                  }`}
+          {/* Either show customer form or the chat conversation */}
+          {showCustomerForm ? (
+            <div className="flex-1 p-4 space-y-4">
+              <form onSubmit={handleCustomerSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Nombre completo
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full p-2 border rounded-lg"
+                    value={customerInfo.name}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Correo electrónico
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    className="w-full p-2 border rounded-lg"
+                    value={customerInfo.email}
+                    onChange={(e) =>
+                      setCustomerInfo((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                {formError && (
+                  <p className="text-red-500 text-sm">{formError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
+                  Comenzar conversación
+                </button>
+              </form>
+            </div>
+          ) : (
+            <>
+              {/* Chat Messages */}
+              <div
+                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+                aria-live="polite"
+                aria-atomic="true"
+              >
+                {messages.map((msg, i) => (
                   <div
-                    className={`max-w-[85%] p-3 rounded-xl transition-all duration-200 ${
-                      message.type === "user"
-                        ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
-                        : "bg-white text-gray-800 shadow-md"
+                    key={i}
+                    className={`flex ${
+                      msg.type === "user" ? "justify-end" : "justify-start"
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
-                    <p className="text-xs mt-1 opacity-70">
-                      {message.type === "user" ? "Tú" : "Asistente"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start animate-fade-in">
-                  <div className="bg-white p-3 rounded-xl shadow-md text-sm text-gray-600">
-                    <div className="flex items-center gap-2">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce delay-100"></div>
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce delay-200"></div>
-                      </div>
-                      <span>
-                        {isSpeaking ? "Generando voz..." : "Procesando..."}
-                      </span>
+                    <div
+                      className={`p-3 rounded-xl max-w-[80%] ${
+                        msg.type === "user"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white shadow-md"
+                      }`}
+                    >
+                      <p className="text-sm">{msg.content}</p>
+                      {msg.metadata?.detectedIntent && (
+                        <p className="text-xs mt-1 opacity-70">
+                          Intención detectada: {msg.metadata.detectedIntent}
+                        </p>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white p-3 rounded-xl shadow-md text-sm text-gray-600">
+                      <div className="flex items-center gap-2">
+                        <div className="flex space-x-1">
+                          {[...Array(3)].map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                              style={{ animationDelay: `${i * 100}ms` }}
+                            />
+                          ))}
+                        </div>
+                        <span>Procesando...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
-            {/* Input Area */}
-            <div className="p-4 border-t border-gray-200 bg-white">
-              <form onSubmit={handleSendMessage} className="flex gap-2">
-                <div className="flex-1 relative">
+              {/* Chat Input */}
+              <form onSubmit={handleSend} className="p-4 border-t">
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder="Escribe o dicta tu mensaje..."
-                    className="w-full p-2.5 pr-12 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70"
+                    className="flex-1 p-2 border rounded-lg text-sm"
                     disabled={isLoading}
+                    onKeyDown={(e) => e.key === "Enter" && handleSend(e)}
                   />
                   <button
-                    type="button"
-                    onClick={() => recognition.current?.start()}
-                    className={`absolute right-2 top-2 p-1.5 rounded-lg transition-colors ${
-                      isListening
-                        ? "bg-red-500 text-white animate-pulse"
-                        : "text-gray-500 hover:bg-gray-100"
+                    type="submit"
+                    disabled={isLoading}
+                    className={`p-2 bg-blue-600 text-white rounded-lg transition-colors ${
+                      isLoading
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-blue-700"
                     }`}
-                    disabled={!recognition.current}
-                    title="Dictar mensaje"
                   >
-                    <IconMicrophone size={18} />
+                    <FaPaperPlane size={20} />
                   </button>
                 </div>
-                <button
-                  type="submit"
-                  className="p-2.5 bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-md disabled:opacity-50 transition-all"
-                  disabled={isLoading}
-                >
-                  <IconSend size={18} />
-                </button>
               </form>
-            </div>
-          </div>
-        </>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
-};
-
-export default FloatingChatbot;
+}
