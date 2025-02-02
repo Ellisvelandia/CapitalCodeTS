@@ -58,7 +58,8 @@ export default function FloatingChatbot() {
 
     const handleVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      const selectedVoice = voices.find((voice) => voice.name === 'Microsoft Sabina - Spanish (Mexico)') || voices[0];
+      // Select a more human-like voice
+      const selectedVoice = voices.find(voice => voice.lang === 'es-ES' && voice.name.includes('Google')) || voices[0];
       setSpanishVoice(selectedVoice);
     };
 
@@ -169,6 +170,16 @@ export default function FloatingChatbot() {
     setFormError("");
   };
 
+  // Handle chat toggle
+  const handleChatToggle = () => {
+    setIsOpen(prev => {
+      if (!prev) {
+        setShowCustomerForm(true); // Show the customer form when opening the chat
+      }
+      return !prev;
+    });
+  };
+
   // Handle sending a chat message.
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -189,6 +200,25 @@ export default function FloatingChatbot() {
         role: msg.type === "bot" ? "assistant" : "user",
         content: msg.content,
       }));
+
+      // Check if the user is asking for website info
+      if (userMessage.toLowerCase().includes("get website info")) {
+        const response = await fetch("/api/scrape");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || `Error: ${response.status}`);
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            type: "bot",
+            content: `Website Title: ${data.title}\nServices: ${data.services.join(", ")}\nTestimonials: ${data.testimonials.join(", ")}`,
+          },
+        ]);
+        return;
+      }
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -245,7 +275,7 @@ export default function FloatingChatbot() {
       {/* Chat Toggle Button */}
       <button
         aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleChatToggle}
         className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all"
       >
         {isOpen ? <FaTimes size={28} /> : <FaComment size={28} />}
