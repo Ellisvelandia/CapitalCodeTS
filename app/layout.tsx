@@ -3,7 +3,6 @@ import { Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import FloatingWhatsApp from "@/components/floating-whatsapp";
-import FloatingChatbot from "@/components/floating-chatbot";
 import Chat from "@/components/Chat";
 
 const font = Space_Grotesk({ subsets: ["latin"] });
