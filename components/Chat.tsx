@@ -134,10 +134,10 @@ export default function Chat() {
         <div
           role="dialog"
           aria-labelledby="chatbot-heading"
-          className="fixed bottom-24 right-8 w-full sm:w-96 h-[70vh] bg-white rounded-t-xl shadow-xl flex flex-col"
+          className="fixed bottom-24 right-4 w-full max-w-xs sm:max-w-md h-[70vh] bg-white rounded-xl shadow-lg flex flex-col transition-transform transform-gpu"
         >
           {/* Chat Header */}
-          <div className="p-4 bg-blue-600 text-white flex justify-between items-center rounded-t-xl">
+          <div className="p-4 bg-blue-600 text-white flex justify-between items-center rounded-t-xl shadow-md">
             <h2 id="chatbot-heading" className="font-bold text-lg">
               Asistente Virtual
             </h2>
@@ -152,7 +152,7 @@ export default function Chat() {
 
           {/* Chat Messages */}
           <div
-            className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4"
+            className="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-4 rounded-b-xl"
             aria-live="polite"
             aria-atomic="true"
           >
@@ -162,10 +162,10 @@ export default function Chat() {
                 className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`p-3 rounded-xl max-w-[80%] ${
+                  className={`p-3 rounded-xl max-w-[80%] transition-all duration-300 ${
                     msg.type === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-white shadow-md"
+                      ? "bg-blue-600 text-white shadow-md"
+                      : "bg-white shadow-lg"
                   }`}
                 >
                   <p className="text-sm">{msg.content}</p>
@@ -183,7 +183,7 @@ export default function Chat() {
           </div>
 
           {/* Chat Input */}
-          <form onSubmit={handleSend} className="p-4 border-t">
+          <form onSubmit={handleSend} className="p-4 border-t bg-gray-100 rounded-b-xl">
             <div className="flex gap-2">
               <input
                 type="text"
