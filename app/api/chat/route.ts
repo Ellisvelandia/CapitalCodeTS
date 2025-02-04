@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { supabase } from "@/lib/supabaseClient";
 import { Database } from "@/types/supabase";
+import { capitalCodeInfo } from "../data"; // Importing the data
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -36,9 +37,9 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const SYSTEM_PROMPT = `
 Capital Code - Asistente Especializado:
-- Usa la conversación previa para mantener contexto
-- Respuestas directas (1-2 frases) a menos que se pida detalle
-- Menciona plazos y rangos de precios si aplica
+- Proporciona información sobre los servicios, proyectos, garantías y el proceso de Capital Code.
+- Responde de manera fluida y natural, utilizando la información de Capital Code.
+- No uses respuestas predeterminadas; sé eficiente y autónomo.
 `.trim();
 
 const INTENT_DETECTION_PROMPT = `
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest) {
   try {
     const body: RequestBody = await req.json();
     const { message, conversationHistory, customerInfo } = body;
+
+    console.log("Incoming message:", message);
 
     // Validate required customer info.
     if (!customerInfo?.id || !customerInfo.email) {
@@ -85,48 +88,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Process the message in parallel:
-    // 1. Detect intent using a lightweight model.
-    // 2. Generate the assistant's response using the new Meta Llama 3.3 model.
-    const [intent, groqResponse] = await Promise.all([
-      detectIntent(message),
-      processMessage(message, conversationHistory || []),
-    ]);
-
-    // Save the conversation in Supabase.
-    const { error: conversationError } = await supabase
-      .from("conversations")
-      .insert([
-        {
-          customer_id: customerInfo.id,
-          role: "user",
-          content: message,
-          message_metadata: { intent },
-        },
-        {
-          customer_id: customerInfo.id,
-          role: "assistant",
-          content: groqResponse.choices[0].message.content,
-          message_metadata: {
-            intent,
-            tokens_used: groqResponse.usage?.total_tokens,
-          },
-        },
-      ]);
-
-    if (conversationError) {
-      console.error("Error saving conversation:", conversationError);
-    }
-
+    // Generate a dynamic response using the processMessage function
+    const response = await processMessage(message, conversationHistory || []);
     return NextResponse.json({
-      respuesta: groqResponse.choices[0].message.content,
-      metadata: {
-        detectedIntent: intent,
-        tokensUsed: groqResponse.usage?.total_tokens,
-        customerId: customerInfo.id,
-        responseTime: Date.now() - startTime,
-      },
+      respuesta: response.choices[0].message.content,
     });
+
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
@@ -139,6 +106,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Function to detect intent using Groq
 async function detectIntent(message: string): Promise<string> {
   try {
     const response = await groq.chat.completions.create({
@@ -150,14 +118,13 @@ async function detectIntent(message: string): Promise<string> {
       temperature: 0.1,
       max_tokens: 10,
     });
-    return (
-      response.choices[0]?.message?.content?.trim().toLowerCase() || "general"
-    );
+    return response.choices[0]?.message?.content?.trim().toLowerCase() || "general";
   } catch {
     return "general";
   }
 }
 
+// Function to process the message and generate a response
 async function processMessage(message: string, history: ChatMessage[]) {
   const messages: ChatMessage[] = [
     { role: "system", content: SYSTEM_PROMPT },
@@ -165,12 +132,45 @@ async function processMessage(message: string, history: ChatMessage[]) {
     { role: "user", content: message },
   ];
 
-  return groq.chat.completions.create({
-    messages,
-    model: "llama-3.3-70b-versatile", // New model identifier
-    temperature: 0.7,
-    max_tokens: 300,
-  });
+  // Check for keywords and provide direct responses
+  if (message.toLowerCase().includes("servicios")) {
+    return {
+      choices: [{
+        message: {
+          content: `Ofrecemos los siguientes servicios:\n- ${capitalCodeInfo.services.map(service => `${service.title}: ${service.description}`).join('\n- ')}`,
+        },
+      }],
+    };
+  }
+
+  if (message.toLowerCase().includes("proyectos")) {
+    return {
+      choices: [{
+        message: {
+          content: `Hemos completado más de ${capitalCodeInfo.projects.length} proyectos exitosos. Aquí hay algunos ejemplos:\n- ${capitalCodeInfo.projects.map(project => `${project.title}: ${project.description}`).join('\n- ')}`,
+        },
+      }],
+    };
+  }
+
+  if (message.toLowerCase().includes("garantías")) {
+    return {
+      choices: [{
+        message: {
+          content: `Nuestras garantías incluyen:\n- ${capitalCodeInfo.guarantees.join('\n- ')}`,
+        },
+      }],
+    };
+  }
+
+  // If the message does not match any keywords, return a message indicating no information is available
+  return {
+    choices: [{
+      message: {
+        content: "Lo siento, no tengo información sobre eso. Por favor, pregúntame sobre nuestros servicios, proyectos o garantías.",
+      },
+    }],
+  };
 }
 
 // Specify that this route should run on the Edge runtime.

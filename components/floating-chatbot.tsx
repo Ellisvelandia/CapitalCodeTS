@@ -13,10 +13,6 @@ import { supabase } from "@/lib/supabaseClient"; // Ensure this is correctly imp
 interface ChatMessage {
   type: "user" | "bot";
   content: string;
-  metadata?: {
-    detectedIntent?: string;
-    responseTime?: number;
-  };
 }
 
 interface CustomerInfo {
@@ -58,7 +54,6 @@ export default function FloatingChatbot() {
 
     const handleVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      // Select a more human-like voice
       const selectedVoice = voices.find(voice => voice.lang === 'es-ES' && voice.name.includes('Google')) || voices[0];
       setSpanishVoice(selectedVoice);
     };
@@ -80,34 +75,13 @@ export default function FloatingChatbot() {
   const speakMessage = (text: string) => {
     if (isMuted || typeof window === "undefined" || !window.speechSynthesis) return;
 
-    // Clean text for better pronunciation: remove inverted punctuation and collapse extra spaces.
-    const cleanText = text
-      .replace(/¡/g, "")
-      .replace(/¿/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // Create an utterance with the cleaned text.
+    const cleanText = text.replace(/¡/g, "").replace(/¿/g, "").replace(/\s+/g, " ").trim();
     const utterance = new SpeechSynthesisUtterance(cleanText);
 
     if (spanishVoice) {
       utterance.voice = spanishVoice;
-      utterance.lang = spanishVoice.lang;
-      // Use the custom voice settings.
-      utterance.rate = voiceSettings.rate;
-      utterance.pitch = voiceSettings.pitch;
-      utterance.volume = voiceSettings.volume;
-    } else {
-      // Fallback to browser's default Spanish settings.
-      utterance.lang = voiceSettings.preferredLanguage;
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
     }
 
-    // Add slight pauses for punctuation for better clarity.
-    utterance.text = cleanText.replace(/([,.])/g, "$1 ");
-
-    // Error handling.
     utterance.onerror = (event) => {
       console.error("Speech synthesis error:", event.error);
     };
@@ -184,11 +158,6 @@ export default function FloatingChatbot() {
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
-    // If there is no customer id, prompt the user to fill out the customer form.
-    if (!customerInfo.id) {
-      setShowCustomerForm(true);
-      return;
-    }
 
     const userMessage = inputMessage.trim();
     setInputMessage("");
@@ -196,36 +165,15 @@ export default function FloatingChatbot() {
     setIsLoading(true);
 
     try {
-      const history = messages.map((msg) => ({
-        role: msg.type === "bot" ? "assistant" : "user",
-        content: msg.content,
-      }));
-
-      // Check if the user is asking for website info
-      if (userMessage.toLowerCase().includes("get website info")) {
-        const response = await fetch("/api/scrape");
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || `Error: ${response.status}`);
-        }
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            type: "bot",
-            content: `Website Title: ${data.title}\nServices: ${data.services.join(", ")}\nTestimonials: ${data.testimonials.join(", ")}`,
-          },
-        ]);
-        return;
-      }
-
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: userMessage,
-          conversationHistory: history,
+          conversationHistory: messages.map((msg) => ({
+            role: msg.type === "bot" ? "assistant" : "user",
+            content: msg.content,
+          })),
           customerInfo,
         }),
       });
@@ -233,11 +181,6 @@ export default function FloatingChatbot() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.error === "invalid_customer" || data.error === "customer_not_found") {
-          setShowCustomerForm(true);
-          setFormError("Necesitamos actualizar tus datos");
-          throw new Error("Invalid customer session");
-        }
         throw new Error(data.error || `Error: ${response.status}`);
       }
 
@@ -246,23 +189,17 @@ export default function FloatingChatbot() {
         {
           type: "bot",
           content: data.respuesta,
-          metadata: {
-            detectedIntent: data.metadata?.detectedIntent,
-            responseTime: data.metadata?.responseTime,
-          },
         },
       ]);
 
       speakMessage(data.respuesta);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
         {
           type: "bot",
-          content: error.message.includes("temporal")
-            ? "⚠️ Error temporal. Contacta: capitalcodecol@gmail.com"
-            : "⚠️ Necesitamos verificar tus datos. Completa el formulario nuevamente.",
+          content: "⚠️ Error al procesar tu solicitud. Intenta de nuevo más tarde.",
         },
       ]);
     } finally {
@@ -377,29 +314,13 @@ export default function FloatingChatbot() {
                       }`}
                     >
                       <p className="text-sm">{msg.content}</p>
-                      {msg.metadata?.detectedIntent && (
-                        <p className="text-xs mt-1 opacity-70">
-                          Intención detectada: {msg.metadata.detectedIntent}
-                        </p>
-                      )}
                     </div>
                   </div>
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
                     <div className="bg-white p-3 rounded-xl shadow-md text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <div className="flex space-x-1">
-                          {[...Array(3)].map((_, i) => (
-                            <div
-                              key={i}
-                              className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                              style={{ animationDelay: `${i * 100}ms` }}
-                            />
-                          ))}
-                        </div>
-                        <span>Procesando...</span>
-                      </div>
+                      <span>Procesando...</span>
                     </div>
                   </div>
                 )}
@@ -413,7 +334,7 @@ export default function FloatingChatbot() {
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Escribe o dicta tu mensaje..."
+                    placeholder="Escribe tu mensaje..."
                     className="flex-1 p-2 border rounded-lg text-sm"
                     disabled={isLoading}
                     onKeyDown={(e) => e.key === "Enter" && handleSend(e)}

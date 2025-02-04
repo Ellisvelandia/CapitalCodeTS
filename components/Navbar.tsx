@@ -17,7 +17,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
   const isHomePage = pathname === "/";
 
   return (
-    <div className="overflow-hidden rounded-[6px] top-5 sticky md:mx-auto z-50 xl:w-4/5 2xl:w-[68%] bg-white flex items-center justify-between py-4 sm:py-6 px-3 sm:px-4 md:px-8 mx-3 sm:mx-6">
+    <header className="overflow-hidden rounded-[6px] top-5 sticky md:mx-auto z-50 xl:w-4/5 2xl:w-[68%] bg-white flex items-center justify-between py-4 sm:py-6 px-3 sm:px-4 md:px-8 mx-3 sm:mx-6">
       <Link href={"/"} aria-label="Ir a la página principal">
         <Image
           src={"/logo/logo.webp"}
@@ -28,9 +28,16 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
         />
       </Link>
 
-      <div className="absolute right-1/2 translate-x-1/2 transform md:pr-24 lg:pr-32 xl:pr-0">
+      <nav
+        aria-label="Navegación principal de escritorio"
+        className="absolute right-1/2 translate-x-1/2 transform md:pr-24 lg:pr-32 xl:pr-0"
+      >
         <div className="hidden md:flex gap-x-6 lg:gap-x-10 items-center text-gray-700 font-medium text-base lg:text-lg cursor-pointer">
-          <Link href={"/showcase"} className="hover:text-blue-500">
+          <Link
+            href={"/showcase"}
+            className="hover:text-blue-500"
+            aria-label="Ver proyectos"
+          >
             Proyectos
           </Link>
 
@@ -42,6 +49,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                 className="hover:text-blue-500"
                 role="button"
                 tabIndex={0}
+                aria-label="Ir a servicios"
               >
                 Servicios
               </ScrollLink>
@@ -52,6 +60,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                 className="hover:text-blue-500"
                 role="button"
                 tabIndex={0}
+                aria-label="Ir a proceso"
               >
                 Proceso
               </ScrollLink>
@@ -62,25 +71,38 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                 className="hover:text-blue-500"
                 role="button"
                 tabIndex={0}
+                aria-label="Ver garantías"
               >
                 Garantías
               </ScrollLink>
             </>
           ) : (
             <>
-              <Link href="/#services" className="hover:text-blue-500">
+              <Link
+                href="/#services"
+                className="hover:text-blue-500"
+                aria-label="Ir a servicios"
+              >
                 Servicios
               </Link>
-              <Link href="/#process" className="hover:text-blue-500">
+              <Link
+                href="/#process"
+                className="hover:text-blue-500"
+                aria-label="Ir a proceso"
+              >
                 Proceso
               </Link>
-              <Link href="/#guarentees" className="hover:text-blue-500">
+              <Link
+                href="/#guarentees"
+                className="hover:text-blue-500"
+                aria-label="Ver garantías"
+              >
                 Garantías
               </Link>
             </>
           )}
         </div>
-      </div>
+      </nav>
 
       <div className="flex items-center gap-x-4">
         <button
@@ -97,6 +119,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
         <Link
           href={"/meeting"}
           className="py-3 px-6 text-lg hover:bg-[#abcbff] rounded-[6px] border-2 border-black dark:border-white bg-[#121212] text-white transition duration-200 hover:shadow-[1px_1px_rgba(0,0,0),2px_2px_rgba(0,0,0),3px_3px_rgba(0,0,0),4px_4px_rgba(0,0,0),5px_5px_0px_0px_rgba(0,0,0)] dark:shadow-[1px_1px_rgba(255,255,255),2px_2px_rgba(255,255,255),3px_3px_rgba(255,255,255),4px_4px_rgba(255,255,255),5px_5px_0px_0px_rgba(255,255,255)]"
+          aria-label="Agendar llamada"
         >
           Agendar Llamada
         </Link>
@@ -115,21 +138,18 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                   className="w-full"
                 />
               </div>
-              <button
-                onClick={toggleMenu}
-                className="p-2"
-                aria-label="Cerrar menú"
-              >
+              <button onClick={toggleMenu} className="p-2" aria-label="Cerrar menú">
                 <IconX className="w-5 h-5 text-gray-700" />
               </button>
             </div>
 
-            <nav className="flex-1 px-6 pt-8">
+            <nav aria-label="Navegación principal móvil" className="flex-1 px-6 pt-8">
               <div className="space-y-8">
                 <Link
                   href={"/showcase"}
                   className="block text-[17px] text-blue-600 font-medium"
                   onClick={toggleMenu}
+                  aria-label="Ver proyectos"
                 >
                   Proyectos
                 </Link>
@@ -142,6 +162,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                       role="button"
                       tabIndex={0}
                       onClick={toggleMenu}
+                      aria-label="Ir a servicios"
                     >
                       Servicios
                     </ScrollLink>
@@ -152,6 +173,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                       role="button"
                       tabIndex={0}
                       onClick={toggleMenu}
+                      aria-label="Ir a proceso"
                     >
                       Proceso
                     </ScrollLink>
@@ -162,6 +184,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                       role="button"
                       tabIndex={0}
                       onClick={toggleMenu}
+                      aria-label="Ver garantías"
                     >
                       Garantías
                     </ScrollLink>
@@ -172,6 +195,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                       href="/#services"
                       className="block text-[17px] text-gray-700 font-medium"
                       onClick={toggleMenu}
+                      aria-label="Ir a servicios"
                     >
                       Servicios
                     </Link>
@@ -179,6 +203,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                       href="/#process"
                       className="block text-[17px] text-gray-700 font-medium"
                       onClick={toggleMenu}
+                      aria-label="Ir a proceso"
                     >
                       Proceso
                     </Link>
@@ -186,6 +211,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
                       href="/#guarentees"
                       className="block text-[17px] text-gray-700 font-medium"
                       onClick={toggleMenu}
+                      aria-label="Ver garantías"
                     >
                       Garantías
                     </Link>
@@ -196,7 +222,7 @@ const Navbar = ({ isMenuOpen, toggleMenu }: NavbarProps) => {
           </div>
         </div>
       )}
-    </div>
+    </header>
   );
 };
 

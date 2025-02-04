@@ -7,10 +7,15 @@ import FloatingChatbot from "@/components/floating-chatbot";
 
 const font = Space_Grotesk({ subsets: ["latin"] });
 
+// Global SEO defaults in Spanish
 export const metadata: Metadata = {
   metadataBase: new URL('https://capital-code.vercel.app'),
   title: "Capital Code | Desarrollo de Software y Sitios Web Personalizados",
   description: "Expertos en desarrollo de software y sitios web personalizados para empresas e individuos. Transformamos ideas en soluciones tecnológicas innovadoras.",
+  keywords: ['SEO', 'sitio web', 'contenido en español'],
+  alternates: {
+    canonical: 'https://capital-code.vercel.app',
+  },
   openGraph: {
     title: "Capital Code | Desarrollo de Software",
     description: "Expertos en desarrollo de software y sitios web personalizados",
@@ -57,7 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body className={font.className}>
 
         {children}
