@@ -30,6 +30,14 @@ export default function Chat() {
   // State to store a selected Spanish voice.
   const [spanishVoice, setSpanishVoice] = useState<SpeechSynthesisVoice | null>(null);
 
+  // Define quick questions based on services
+  const quickQuestions = [
+    "¿Qué servicios ofrecen?",
+    "¿Cuáles son los pasos del proceso?",
+    "¿Qué garantías tienen?",
+    "¿Cómo contactar con soporte?",
+  ];
+
   // Set up the Spanish voice for speech synthesis when the component mounts.
   useEffect(() => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
@@ -180,6 +188,24 @@ export default function Chat() {
               </div>
             )}
             <div ref={messagesEndRef} />
+          </div>
+
+          {/* Quick Questions */}
+          <div className="p-4 bg-gray-100 border-t border-gray-200">
+            <div className="flex flex-wrap gap-2">
+              {quickQuestions.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setInputMessage(q);
+                    handleSend({ preventDefault: () => {} } as React.FormEvent); // Trigger send
+                  }}
+                  className="text-xs bg-blue-100 text-gray-600 px-3 py-1.5 rounded-full hover:bg-blue-200 border border-gray-200 shadow-sm hover:shadow-md transition-all"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Chat Input */}
