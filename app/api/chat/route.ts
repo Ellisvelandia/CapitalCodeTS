@@ -18,20 +18,36 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Initialize Groq client
-const groq = new Groq({ apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY });
+// Initialize Groq client with API key from environment variable
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY || ''  // Add fallback to empty string
+});
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { message } = await request.json();
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Entrada inválida" }, { status: 400 });
+    // Verify API key exists and is in correct format
+    if (!process.env.GROQ_API_KEY?.startsWith('gsk_')) {
+      console.error('Invalid or missing GROQ API key');
+      return NextResponse.json(
+        { error: "Error de configuración: La clave API no es válida." },
+        { status: 500 }
+      );
     }
 
-    // Build the final prompt for the AI using our helper
+    // Get message from request body
+    const { message } = await req.json();
+    
+    if (!message) {
+      return NextResponse.json(
+        { error: "El mensaje es requerido." },
+        { status: 400 }
+      );
+    }
+
+    // Build the prompt using the helper function
     const prompt = buildChatbotPrompt(message);
 
-    // Call the Groq API with the constructed prompt
+    // Generate chat completion
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         {
@@ -40,16 +56,26 @@ export async function POST(request: Request) {
         },
         { role: "user", content: message },
       ],
-      model: "llama-3.3-70b-versatile",
+      model: "mixtral-8x7b-32768",  // Using a different model
+      temperature: 0.7,
+      max_tokens: 1000,
     });
+
+    if (!chatCompletion.choices?.[0]?.message?.content) {
+      throw new Error('No response content from API');
+    }
 
     return NextResponse.json({
       response: chatCompletion.choices[0].message.content,
     });
-  } catch (error) {
-    console.error("Error:", error);
+
+  } catch (error: any) {
+    console.error("API Error:", error);
     return NextResponse.json(
-      { error: "No se pudo generar una respuesta." },
+      { 
+        error: "Error del servidor: " + (error.message || "No se pudo generar una respuesta."),
+        details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+      },
       { status: 500 }
     );
   }
