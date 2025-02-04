@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FaTimes,
   FaComment,
@@ -8,7 +8,7 @@ import {
   FaVolumeMute,
   FaPaperPlane,
 } from "react-icons/fa";
-import { supabase } from "@/lib/supabaseClient"; // Ensure this is correctly imported
+import { supabase } from "@/lib/supabaseClient";
 
 interface ChatMessage {
   type: "user" | "bot";
@@ -22,7 +22,7 @@ interface CustomerInfo {
 }
 
 export default function FloatingChatbot() {
-  // Chat state
+  // Chat and customer state variables.
   const [isOpen, setIsOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
@@ -37,75 +37,45 @@ export default function FloatingChatbot() {
   const [formError, setFormError] = useState("");
   const [spanishVoice, setSpanishVoice] = useState<SpeechSynthesisVoice | null>(null);
 
-  // Define preferred voice settings as state (you can later allow users to modify these)
-  const [voiceSettings] = useState({
-    rate: 1.0, // Normal speed for a more natural tone
-    pitch: 1.0, // Normal pitch for a human-like sound
-    volume: 1.0,
-    preferredLanguage: "es-ES",
-    fallbackLanguage: "es-US", // Fallback if preferred voice not found
-  });
-
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Set up a Spanish voice with a list of preferred voices.
+  // Set up Spanish voice for speech synthesis.
   useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-
-    const handleVoices = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
       const voices = window.speechSynthesis.getVoices();
-      const selectedVoice = voices.find(voice => voice.lang === 'es-ES' && voice.name.includes('Google')) || voices[0];
+      const selectedVoice = voices.find(
+        (voice) => voice.lang === "es-ES" && voice.name.includes("Google")
+      ) || voices[0];
       setSpanishVoice(selectedVoice);
-    };
-
-    window.speechSynthesis.onvoiceschanged = handleVoices;
-    handleVoices(); // Initial check
-
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-    };
+    }
   }, []);
 
-  // Scroll chat to the bottom when messages change.
+  // Auto-scroll the chat window when new messages arrive.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Helper: speak a message using speech synthesis with improved settings.
+  // Use speech synthesis to read out bot messages.
   const speakMessage = (text: string) => {
     if (isMuted || typeof window === "undefined" || !window.speechSynthesis) return;
-
-    const cleanText = text.replace(/¡/g, "").replace(/¿/g, "").replace(/\s+/g, " ").trim();
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-
-    if (spanishVoice) {
-      utterance.voice = spanishVoice;
-    }
-
-    utterance.onerror = (event) => {
-      console.error("Speech synthesis error:", event.error);
-    };
-
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (spanishVoice) utterance.voice = spanishVoice;
     window.speechSynthesis.speak(utterance);
   };
 
   // Enhanced email validation.
   const isValidEmail = (email: string) => {
-    const pattern =
-      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-    if (!pattern.test(email)) {
+    const re =
+      /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    if (!re.test(email)) {
       setFormError("Por favor ingrese un correo electrónico válido");
       return false;
     }
     return true;
   };
 
-  /**
-   * Create or upsert a customer record in Supabase.
-   * Uses the upsert method with onConflict set to "email" so that if a record
-   * with the same email exists, it returns that record rather than creating a duplicate.
-   */
-  const createCustomer = async (): Promise<boolean> => {
+  // Create or update a customer record in Supabase.
+  const createOrUpsertCustomer = async (): Promise<boolean> => {
     try {
       const { data, error } = await supabase
         .from("customers")
@@ -113,14 +83,13 @@ export default function FloatingChatbot() {
         .select();
 
       if (error || !data || data.length === 0) {
-        setFormError("Error creando el cliente: " + (error?.message || "unknown error"));
+        setFormError("Error creando el cliente.");
         return false;
       }
-      // Update customerInfo with the new or existing id.
       setCustomerInfo((prev) => ({ ...prev, id: data[0].id }));
       return true;
     } catch (err) {
-      setFormError("Error creando el cliente");
+      setFormError("Error creando el cliente.");
       return false;
     }
   };
@@ -134,21 +103,19 @@ export default function FloatingChatbot() {
     }
     if (!isValidEmail(customerInfo.email)) return;
 
-    // Create or upsert the customer record if no customer id exists.
     if (!customerInfo.id) {
-      const created = await createCustomer();
+      const created = await createOrUpsertCustomer();
       if (!created) return;
     }
-    // Hide the form after successful customer creation/upsert.
     setShowCustomerForm(false);
     setFormError("");
   };
 
-  // Handle chat toggle
+  // Toggle chat visibility.
   const handleChatToggle = () => {
-    setIsOpen(prev => {
+    setIsOpen((prev) => {
       if (!prev) {
-        setShowCustomerForm(true); // Show the customer form when opening the chat
+        setShowCustomerForm(true);
       }
       return !prev;
     });
@@ -159,9 +126,9 @@ export default function FloatingChatbot() {
     e?.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
 
-    const userMessage = inputMessage.trim();
+    const userMsg = inputMessage.trim();
     setInputMessage("");
-    setMessages((prev) => [...prev, { type: "user", content: userMessage }]);
+    setMessages((prev) => [...prev, { type: "user", content: userMsg }]);
     setIsLoading(true);
 
     try {
@@ -169,7 +136,7 @@ export default function FloatingChatbot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMessage,
+          message: userMsg,
           conversationHistory: messages.map((msg) => ({
             role: msg.type === "bot" ? "assistant" : "user",
             content: msg.content,
@@ -179,28 +146,16 @@ export default function FloatingChatbot() {
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Error");
 
-      if (!response.ok) {
-        throw new Error(data.error || `Error: ${response.status}`);
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          type: "bot",
-          content: data.respuesta,
-        },
-      ]);
-
-      speakMessage(data.respuesta);
+      const botMessage = data.respuesta;
+      setMessages((prev) => [...prev, { type: "bot", content: botMessage }]);
+      speakMessage(botMessage);
     } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
-        {
-          type: "bot",
-          content: "⚠️ Error al procesar tu solicitud. Intenta de nuevo más tarde.",
-        },
+        { type: "bot", content: "⚠️ Error al procesar tu solicitud. Intenta de nuevo más tarde." },
       ]);
     } finally {
       setIsLoading(false);
@@ -208,83 +163,65 @@ export default function FloatingChatbot() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-8 right-8 z-50">
       {/* Chat Toggle Button */}
       <button
-        aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
         onClick={handleChatToggle}
         className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all"
+        aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
       >
         {isOpen ? <FaTimes size={28} /> : <FaComment size={28} />}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
         <div
           role="dialog"
           aria-labelledby="chatbot-heading"
-          className="fixed bottom-20 right-0 w-full sm:w-96 h-[70vh] bg-white rounded-t-xl shadow-xl flex flex-col"
+          className="fixed bottom-24 right-8 w-full sm:w-96 h-[70vh] bg-white rounded-t-xl shadow-xl flex flex-col"
         >
           {/* Chat Header */}
           <div className="p-4 bg-blue-600 text-white flex justify-between items-center rounded-t-xl">
             <h2 id="chatbot-heading" className="font-bold text-lg">
               Asistente Virtual
             </h2>
-            <div className="flex gap-2">
-              <button
-                aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-                onClick={() => setIsMuted(!isMuted)}
-                className="p-1.5 hover:bg-white/10 rounded-full"
-              >
-                {isMuted ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
-              </button>
-            </div>
+            <button
+              onClick={() => setIsMuted(!isMuted)}
+              aria-label={isMuted ? "Activar sonido" : "Silenciar"}
+              className="p-1.5 hover:bg-white/10 rounded-full"
+            >
+              {isMuted ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
+            </button>
           </div>
 
-          {/* Either show customer form or the chat conversation */}
+          {/* Customer Form or Chat Conversation */}
           {showCustomerForm ? (
             <div className="flex-1 p-4 space-y-4">
               <form onSubmit={handleCustomerSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Nombre completo
-                  </label>
+                  <label className="block text-sm font-medium mb-1">Nombre completo</label>
                   <input
                     type="text"
                     required
                     className="w-full p-2 border rounded-lg"
                     value={customerInfo.name}
                     onChange={(e) =>
-                      setCustomerInfo((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
+                      setCustomerInfo((prev) => ({ ...prev, name: e.target.value }))
                     }
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Correo electrónico
-                  </label>
+                  <label className="block text-sm font-medium mb-1">Correo electrónico</label>
                   <input
                     type="email"
                     required
                     className="w-full p-2 border rounded-lg"
                     value={customerInfo.email}
                     onChange={(e) =>
-                      setCustomerInfo((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
+                      setCustomerInfo((prev) => ({ ...prev, email: e.target.value }))
                     }
                   />
                 </div>
-
-                {formError && (
-                  <p className="text-red-500 text-sm">{formError}</p>
-                )}
-
+                {formError && <p className="text-red-500 text-sm">{formError}</p>}
                 <button
                   type="submit"
                   className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -308,9 +245,7 @@ export default function FloatingChatbot() {
                   >
                     <div
                       className={`p-3 rounded-xl max-w-[80%] ${
-                        msg.type === "user"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white shadow-md"
+                        msg.type === "user" ? "bg-blue-600 text-white" : "bg-white shadow-md"
                       }`}
                     >
                       <p className="text-sm">{msg.content}</p>
