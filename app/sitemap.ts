@@ -1,28 +1,22 @@
-// app/sitemap.xml.ts
-export async function getSitemap() {
-  const baseUrl = "https://capital-code.vercel.app"; // Replace with your actual base URL
+// app/sitemap.ts
+import { MetadataRoute } from "next";
 
-  const pages = [
-    { path: "/", lastModified: new Date().toISOString() },
-    { path: "/showcase", lastModified: new Date().toISOString() },
-    { path: "/meeting", lastModified: new Date().toISOString() },
-    // Add more paths as needed
+export default function sitemap(): MetadataRoute.Sitemap {
+  const baseUrl = "https://capital-code.vercel.app";
+
+  return [
+    {
+      url: `${baseUrl}/`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/showcase`,
+      lastModified: new Date(),
+    },
+    {
+      url: `${baseUrl}/meeting`,
+      lastModified: new Date(),
+    },
+    // Add more entries
   ];
-
-  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-  <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    ${pages
-      .map(
-        ({ path, lastModified }) => `
-      <url>
-        <loc>${baseUrl}${path}</loc>
-        <lastmod>${lastModified}</lastmod>
-      </url>`
-      )
-      .join("")}
-  </urlset>`;
-
-  return new Response(sitemap, {
-    headers: { "Content-Type": "application/xml" },
-  });
 }
