@@ -21,7 +21,7 @@ const Footer = () => {
 
       <div className="flex md:justify-center gap-x-4 mt-10">
         2025 Capital Code. Todos los derechos reservados.
-        <Link href="/" className="text-blue-500">
+        <Link href="/" className="text-blue-800">
           Política de Privacidad
         </Link>
       </div>
