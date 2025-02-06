@@ -128,7 +128,7 @@ export default function Chat() {
           {/* Chat Header - Modern look, clear typography */}
           <div className="p-4 bg-black text-white flex justify-between items-center rounded-t-xl shadow-md">
             <h2 id="chatbot-heading" className="font-bold text-2xl">
-              Asistente Virtual
+              Capital Code
             </h2>
             <button
               onClick={() => {
