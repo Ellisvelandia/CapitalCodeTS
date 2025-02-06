@@ -1,7 +1,6 @@
 "use client";
 
-import { AnimatedBeamMultipleOutputDemo } from "@/components/demos/animated-beam-demo";
-import { AnimatedShinyTextDemo } from "@/components/demos/animated-shiny-text-demo";
+import dynamic from 'next/dynamic';
 import BoxRevealDemo from "@/components/demos/box-reveal-demo";
 import { CoverDemo } from "@/components/demos/cover-demo";
 import { ScrollBasedVelocityDemo } from "@/components/demos/scroll-based-velocity-demo";
@@ -19,6 +18,10 @@ import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import { getSEOTags } from "@/lib/seo";
+
+// Dynamically import components
+const AnimatedBeamMultipleOutputDemoDynamic = dynamic(() => import('@/components/demos/animated-beam-demo').then(mod => mod.AnimatedBeamMultipleOutputDemo));
+const AnimatedShinyTextDemoDynamic = dynamic(() => import('@/components/demos/animated-shiny-text-demo').then(mod => mod.AnimatedShinyTextDemo));
 
 const services = [
   {
@@ -98,7 +101,7 @@ export default function Home() {
         <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
         <div className="md:pb-10">
           <div className="md:px-0 mx-6 xl:w-4/5 2xl:w-[68%] md:mx-auto mt-14">
-            <AnimatedShinyTextDemo />
+            <AnimatedShinyTextDemoDynamic />
 
             <h1>
               <CoverDemo />
@@ -308,7 +311,7 @@ export default function Home() {
 
             <div className="flex flex-col md:flex-row items-center justify-center w-full md:w-1/2 mx-auto">
               <div className="w-full md:w-1/2 order-2 md:order-1">
-                <AnimatedBeamMultipleOutputDemo />
+                <AnimatedBeamMultipleOutputDemoDynamic />
               </div>
               <div className="w-full md:w-1/2 order-1 md:order-2 md:ml-0">
                 <BoxRevealDemo />

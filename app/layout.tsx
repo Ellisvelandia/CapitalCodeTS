@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   keywords: ['SEO', 'sitio web', 'contenido en español'],
   alternates: {
     canonical: 'https://capital-code.vercel.app',
+    languages: {
+      'en-US': '/en-US',
+    },
   },
   openGraph: {
     title: "Capital Code | Desarrollo de Software",
