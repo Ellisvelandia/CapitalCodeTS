@@ -56,7 +56,7 @@ export async function POST(req: Request) {
         },
         { role: "user", content: message },
       ],
-      model: "mixtral-8x7b-32768",  // Using a different model
+      model: "llama-3.3-70b-versatile",  // Using a different model
       temperature: 0.7,
       max_tokens: 1000,
     });
