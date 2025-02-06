@@ -4,6 +4,7 @@ import Calendly from "./calendly";
 import { PiCheckCircle } from "react-icons/pi";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
+import { Element } from "react-scroll";
 import { useState } from "react";
 import { getSEOTags } from "@/lib/seo"; // Importing the getSEOTags function
 
@@ -41,8 +42,10 @@ const Meeting = () => {
       bg-[#fafafa] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]
     "
     >
-      <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
-      <div className="md:px-0 px-6 xl:w-4/5 2xl:w-[68%] justify-between md:mt-14 md:flex mx-auto  ">
+      <Element name="top">
+        <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
+      </Element>
+      <div className="px-6 xl:w-4/5 2xl:w-[68%] justify-between md:mt-14 md:flex mx-auto">
         <div className="md:w-2/5">
           <h1 className="text-4xl font-semibold pt-10   ">
             Agenda una Reunión
