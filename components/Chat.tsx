@@ -7,7 +7,7 @@ import {
   FaVolumeMute,
   FaPaperPlane,
 } from "react-icons/fa";
-import { speakMessage } from "@/lib/speech/speech-synthesis";
+import { speakMessage, stopSpeaking } from "@/lib/speech/speech-synthesis";
 
 // Define the chat message structure.
 interface ChatMessage {
@@ -131,7 +131,12 @@ export default function Chat() {
               Asistente Virtual
             </h2>
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => {
+                setIsMuted(!isMuted);
+                if (!isMuted) {
+                  stopSpeaking(); // Stop speech when muting
+                }
+              }}
               aria-label={isMuted ? "Activar sonido" : "Silenciar"}
               className="p-1.5 hover:bg-gray-800 rounded-full focus:outline-none"
             >

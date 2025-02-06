@@ -1,14 +1,27 @@
+export const stopSpeaking = () => {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+};
+
 export const speakMessage = (
   text: string,
   isMuted: boolean = false,
   lang: string = "es-ES"
 ) => {
-  if (isMuted || typeof window === "undefined" || !window.speechSynthesis) {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
     return;
   }
 
-  // Cancel any ongoing speech and wait a brief moment
-  window.speechSynthesis.cancel();
+  // Always cancel any ongoing speech first
+  stopSpeaking();
+
+  // If muted, don't start new speech
+  if (isMuted) {
+    return;
+  }
+
+  // Wait a brief moment before starting new speech
   setTimeout(() => {
     // Helper: find a matching voice for the given language.
     const getVoice = (): SpeechSynthesisVoice | null => {
@@ -119,6 +132,6 @@ export const speakMessage = (
 
   // Return a cleanup function in case you need to cancel later.
   return () => {
-    window.speechSynthesis.cancel();
+    stopSpeaking();
   };
 };
