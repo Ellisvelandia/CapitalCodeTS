@@ -16,9 +16,9 @@ export const speakMessage = (
       if (!voices || voices.length === 0) return null;
       return (
         voices.find((v) => v.lang === lang && v.name.includes("Google")) || // Google voice
-        voices.find((v) => v.lang === lang) || // Any Spanish voice
+        voices.find((v) => v.lang === lang) || // Any voice with the exact language match
         voices.find((v) => v.lang.startsWith("es")) || // Any Spanish variant
-        voices[0] // Fallback to first available voice
+        voices[0] // Fallback to the first available voice
       );
     };
 
@@ -57,10 +57,12 @@ export const speakMessage = (
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
+        // Reset retry count when speech starts successfully
         utterance.onstart = () => {
-          retryCount = 0; // Reset retry count on successful start
+          retryCount = 0;
         };
 
+        // Proceed to the next sentence when this one ends
         utterance.onend = () => {
           currentIndex++;
           if (currentIndex < sentences.length) {
@@ -72,8 +74,10 @@ export const speakMessage = (
         utterance.onerror = (event: any) => {
           // If the error is "interrupted", then we know this utterance was cancelled intentionally.
           if (event.error && event.error.toLowerCase() === "interrupted") {
-            console.warn("Speech synthesis was intentionally interrupted:", event);
-            // Advance to the next sentence without retrying
+            console.warn(
+              "Speech synthesis was intentionally interrupted:",
+              event
+            );
             currentIndex++;
             speakNextSentence();
             return;
