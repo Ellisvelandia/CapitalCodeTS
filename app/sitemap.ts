@@ -1,5 +1,5 @@
 // app/sitemap.xml.ts
-export async function GET() {
+export async function getSitemap() {
   const baseUrl = "https://capital-code.vercel.app"; // Replace with your actual base URL
 
   const pages = [
