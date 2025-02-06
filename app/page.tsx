@@ -104,11 +104,10 @@ export default function Home() {
               <CoverDemo />
             </h1>
             <p
-              className="md:text-center
-             text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
+              className="md:text-center text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
+              style={{ display: 'block' }}
             >
-              Especialistas en desarrollo de software y sitios web
-              personalizados para empresas e individuos
+              Especialistas en desarrollo de software y sitios web personalizados para empresas e individuos
             </p>
 
             <div
@@ -262,7 +261,7 @@ export default function Home() {
                     alt="image"
                   />
                   <h1 className="text-xl font-medium">{service.title}</h1>
-                  <p className="text-gray-500">{service.description}</p>
+                  <p className="text-gray-800">{service.description}</p>
                 </div>
               ))}
             </div>
