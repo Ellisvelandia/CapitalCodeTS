@@ -5,7 +5,6 @@ import React, { forwardRef, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedBeam } from "@/components/magicui/animated-beam";
 import Image from "next/image";
-import { PiFigmaLogo } from "react-icons/pi";
 
 const Circle = forwardRef<
   HTMLDivElement,
@@ -16,7 +15,7 @@ const Circle = forwardRef<
       ref={ref}
       className={cn(
         "z-10 flex size-12 items-center justify-center rounded-full border-2 border-border  p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
-        className,
+        className
       )}
     >
       {children}
@@ -44,7 +43,7 @@ export function AnimatedBeamMultipleOutputDemo({
     <div
       className={cn(
         "relative flex xl:h-[500px] w-full items-center justify-center overflow-hidden  p-10 ",
-        className,
+        className
       )}
       ref={containerRef}
     >
@@ -57,12 +56,13 @@ export function AnimatedBeamMultipleOutputDemo({
             <Icons.googleDocs />
           </Circle>
           <Circle ref={div3Ref}>
-          <Image
+            <Image
               src={"/logo/figma.png"}
               width={10000}
               height={10000}
               className="w-6 h-6"
               alt="image"
+              loading="lazy"
             />
           </Circle>
           <Circle ref={div4Ref}>
@@ -74,12 +74,13 @@ export function AnimatedBeamMultipleOutputDemo({
         </div>
         <div className="flex flex-col justify-center">
           <Circle ref={div6Ref} className="size-16 bg-white">
-          <Image
-          src={'/logo/logo.webp'}
-          height={1000}
-          width={1000}
-          alt="logo"
-          />
+            <Image
+              src={"/logo/logo.webp"}
+              height={1000}
+              width={1000}
+              alt="logo"
+              loading="lazy"
+            />
           </Circle>
         </div>
         <div className="flex flex-col justify-center">

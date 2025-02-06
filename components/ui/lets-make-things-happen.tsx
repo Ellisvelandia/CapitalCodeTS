@@ -5,17 +5,21 @@ import Link from "next/link";
 
 function LetsMakeThingsHappenSection() {
   return (
-    <section className="
+    <section
+      className="
      my-10 md:py-20  md:mx-auto
-    bg-accent rounded-[45px] p-[50px] md:p-[60px] relative">
+    bg-accent rounded-[45px] p-[50px] md:p-[60px] relative"
+    >
       <div className="md:pr-[22rem]">
         <p className="text-3xl font-medium">
           Desarrollemos tu Próximo Proyecto
         </p>
 
         <p className="my-10 text-xl">
-          Contáctanos hoy para discutir cómo podemos ayudarte a crear la solución tecnológica perfecta para tu negocio.
-          Desde aplicaciones web hasta software empresarial, estamos aquí para hacer realidad tu visión.
+          Contáctanos hoy para discutir cómo podemos ayudarte a crear la
+          solución tecnológica perfecta para tu negocio. Desde aplicaciones web
+          hasta software empresarial, estamos aquí para hacer realidad tu
+          visión.
         </p>
 
         <Link
@@ -45,6 +49,8 @@ function LetsMakeThingsHappenSection() {
           alt="proposal illustration"
           width={300}
           height={300}
+          loading="lazy"
+          style={{ width: "auto", height: "auto" }}
         />
       </div>
     </section>
