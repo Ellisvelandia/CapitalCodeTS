@@ -18,7 +18,8 @@ import { ShootingStarsAndStarsBackgroundDemo } from "@/components/demos/shooting
 import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen";
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
-import Head from 'next/head';
+import Head from "next/head";
+import { getSEOTags } from "@/lib/seo";
 
 const services = [
   {
@@ -66,24 +67,34 @@ export default function Home() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // Structured data in JSON-LD for the homepage
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "WebSite",
-    "url": "https://ejemplo.com",
-    "name": "Mi Sitio Web",
-    "description": "Un sitio web en español optimizado para SEO, brindando contenido de calidad y una excelente experiencia de usuario."
-  };
+  // Define metadata for the Home page
+  const metadata = getSEOTags({
+    title: "Capital Code | Desarrollo de Software y Sitios Web Personalizados",
+    description:
+      "Especialistas en desarrollo de software y sitios web personalizados para empresas e individuos.",
+    keywords: [
+      "desarrollo de software",
+      "sitios web personalizados",
+      "soluciones tecnológicas innovadoras",
+    ],
+    openGraph: {
+      title: "Capital Code | Desarrollo de Software",
+      description:
+        "Expertos en desarrollo de software y sitios web personalizados",
+      url: "https://capital-code.vercel.app/",
+      images: [
+        {
+          url: "/logo/logo.webp",
+          width: 1200,
+          height: 630,
+          alt: "Capital Code - Desarrollo de Software",
+        },
+      ],
+    },
+  });
 
   return (
     <>
-      <Head>
-        {/* Insert structured data for rich search results */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
-      </Head>
       <main className="overflow-clip inset-0 -z-10 h-full w-full bg-[#fafafa] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]">
         <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
         <div className="md:pb-10">
@@ -97,8 +108,8 @@ export default function Home() {
               className="md:text-center
              text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
             >
-              Especialistas en desarrollo de software y sitios web personalizados
-              para empresas e individuos
+              Especialistas en desarrollo de software y sitios web
+              personalizados para empresas e individuos
             </p>
 
             <div
@@ -319,11 +330,11 @@ export default function Home() {
             />
             <div className="flex flex-col gap-y-5 md:w-1/2">
               <h1 className="text-lg md:text-2xl ">
-                &quot;Capital Code ha transformado completamente nuestra presencia
-                digital. Su equipo no solo desarrolló una plataforma excepcional,
-                sino que también nos guió estratégicamente en cada paso del
-                proceso. Su experiencia en desarrollo de software personalizado
-                fue invaluable para nuestro negocio.&quot;
+                &quot;Capital Code ha transformado completamente nuestra
+                presencia digital. Su equipo no solo desarrolló una plataforma
+                excepcional, sino que también nos guió estratégicamente en cada
+                paso del proceso. Su experiencia en desarrollo de software
+                personalizado fue invaluable para nuestro negocio.&quot;
               </h1>
               <div className="flex items-center gap-x-1">
                 <IconStarFilled className="text-4xl text-yellow-500" />

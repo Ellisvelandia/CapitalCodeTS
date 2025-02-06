@@ -7,6 +7,8 @@ import { Element } from "react-scroll";
 import Navbar from "@/components/Navbar";
 import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen";
 import { useState } from "react";
+import Head from "next/head";
+import { getSEOTags } from "@/lib/seo"; // Importing the getSEOTags function
 
 const Showcase = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,11 +16,29 @@ const Showcase = () => {
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
-  
+
+  // Define metadata for the Showcase page
+  const metadata = getSEOTags({
+    title: "Proyectos de Capital Code | Desarrollo de Software",
+    description:
+      "Explora algunos de nuestros proyectos recientes de desarrollo de software y sitios web personalizados.",
+    keywords: [
+      "proyectos",
+      "desarrollo de software",
+      "sitios web personalizados",
+    ],
+    openGraph: {
+      title: "Proyectos de Capital Code",
+      description:
+        "Mira nuestros proyectos recientes y cómo transformamos ideas en soluciones.",
+      url: "https://capital-code.vercel.app/showcase",
+    },
+  });
+
   return (
     <div className="overflow-clip inset-0 -z-10 h-full w-full bg-[#fafafa] bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]">
       <Element name="top">
-        <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu}/>
+        <Navbar isMenuOpen={isMenuOpen} toggleMenu={toggleMenu} />
       </Element>
 
       <Element name="services">
@@ -30,7 +50,8 @@ const Showcase = () => {
             />
           </div>
           <p className="md:text-center text-xl md:text-2xl my-6 md:w-4/5 mx-auto text-gray-500">
-            Explora algunos de nuestros proyectos recientes de desarrollo de software y sitios web personalizados.
+            Explora algunos de nuestros proyectos recientes de desarrollo de
+            software y sitios web personalizados.
           </p>
         </section>
       </Element>
