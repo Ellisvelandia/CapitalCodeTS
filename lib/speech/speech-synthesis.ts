@@ -53,7 +53,7 @@ export const speakMessage = (
         const utterance = new SpeechSynthesisUtterance(sentence);
         utterance.voice = voice;
         utterance.lang = lang;
-        utterance.rate = 0.9; // Slightly slower rate
+        utterance.rate = 1.1; // Slightly slower rate
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
