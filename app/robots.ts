@@ -1,3 +1,4 @@
+// app/robots.txt.ts
 export async function GET() {
   const robotsTxt = `User-agent: *
 Allow: /
