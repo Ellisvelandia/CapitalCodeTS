@@ -1,15 +1,9 @@
-import { NextResponse } from 'next/server';
-
 export async function GET() {
-  const robotsTxt = `
-    User-agent: *
-    Allow: /
-    Disallow: /private/
-  `;
+  const robotsTxt = `User-agent: *
+Allow: /
+Disallow: /private/`;
 
-  return NextResponse.json(robotsTxt, {
-    headers: {
-      'Content-Type': 'text/plain',
-    },
+  return new Response(robotsTxt, {
+    headers: { "Content-Type": "text/plain" },
   });
 }
