@@ -112,7 +112,7 @@ export default function Chat() {
       {/* Chat Toggle Button - Clear CTA with modern gradient */}
       <button
         onClick={toggleChat}
-        className="w-14 h-14 bg-gradient-to-r from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all focus:outline-none"
+        className="w-14 h-14 bg-black rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all focus:outline-none"
         aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
       >
         {isOpen ? <FaTimes size={28} /> : <FaComment size={28} />}
@@ -126,14 +126,14 @@ export default function Chat() {
           className="fixed bottom-24 right-4 w-full max-w-xs sm:max-w-md h-[70vh] bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col transition-transform transform-gpu"
         >
           {/* Chat Header - Modern look, clear typography */}
-          <div className="p-4 bg-gradient-to-r from-blue-500 to-blue-700 text-white flex justify-between items-center rounded-t-xl shadow-md">
+          <div className="p-4 bg-black text-white flex justify-between items-center rounded-t-xl shadow-md">
             <h2 id="chatbot-heading" className="font-bold text-2xl">
               Asistente Virtual
             </h2>
             <button
               onClick={() => setIsMuted(!isMuted)}
               aria-label={isMuted ? "Activar sonido" : "Silenciar"}
-              className="p-1.5 hover:bg-white/10 rounded-full focus:outline-none"
+              className="p-1.5 hover:bg-gray-800 rounded-full focus:outline-none"
             >
               {isMuted ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
             </button>
@@ -155,8 +155,8 @@ export default function Chat() {
                 <div
                   className={`p-3 rounded-xl max-w-[80%] transition-all duration-300 ${
                     msg.type === "user"
-                      ? "bg-blue-600 text-white shadow-md"
-                      : "bg-white dark:bg-gray-700 shadow-lg"
+                      ? "bg-black text-white shadow-md"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white shadow-lg"
                   }`}
                 >
                   <p className="text-sm">{msg.content}</p>
@@ -165,9 +165,8 @@ export default function Chat() {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                {/* Enhanced loading indicator */}
-                <div className="flex items-center space-x-2 bg-gray-200 p-3 rounded-xl shadow-md text-sm text-gray-600">
-                  <span className="animate-pulse">
+                <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-3 rounded-xl shadow-md">
+                  <span className="animate-pulse text-gray-700 dark:text-gray-300 text-sm">
                     El asistente está escribiendo...
                   </span>
                 </div>
@@ -176,18 +175,17 @@ export default function Chat() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Questions - Engaging, clearly labeled CTAs */}
-          <div className="p-4 bg-gray-100 dark:bg-gray-800 border-t border-gray-200">
+          {/* Quick Questions */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200">
             <div className="flex flex-wrap gap-2">
               {quickQuestions.map((q, i) => (
                 <button
                   key={i}
                   onClick={() => {
                     setInputMessage(q);
-                    // Immediately send the quick question
                     handleSend({ preventDefault: () => {} } as React.FormEvent);
                   }}
-                  className="text-xs bg-blue-100 text-gray-600 px-3 py-1.5 rounded-full hover:bg-blue-200 border border-gray-200 shadow-sm hover:shadow-md transition-all"
+                  className="text-xs bg-black/5 hover:bg-black/10 text-black dark:text-white px-3 py-1.5 rounded-full transition-colors"
                   aria-label={`Pregunta rápida: ${q}`}
                 >
                   {q}
@@ -196,7 +194,7 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* Chat Input - Minimalistic and accessible */}
+          {/* Chat Input */}
           <form
             onSubmit={handleSend}
             className="p-4 border-t bg-gray-100 dark:bg-gray-800 rounded-b-xl"
@@ -207,17 +205,17 @@ export default function Chat() {
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Escribe tu mensaje..."
-                className="flex-1 p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 disabled={isLoading}
                 aria-label="Entrada de mensaje"
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className={`p-2 bg-blue-600 text-white rounded-lg transition-colors ${
+                className={`p-2 bg-black text-white rounded-lg transition-colors ${
                   isLoading
                     ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-blue-700"
+                    : "hover:bg-gray-900"
                 }`}
                 aria-label="Enviar mensaje"
               >
