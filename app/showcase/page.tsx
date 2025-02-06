@@ -7,7 +7,6 @@ import { Element } from "react-scroll";
 import Navbar from "@/components/Navbar";
 import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen";
 import { useState } from "react";
-import Head from "next/head";
 import { getSEOTags } from "@/lib/seo"; // Importing the getSEOTags function
 
 const Showcase = () => {

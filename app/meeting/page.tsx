@@ -5,7 +5,6 @@ import { PiCheckCircle } from "react-icons/pi";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import { useState } from "react";
-import Head from "next/head";
 import { getSEOTags } from "@/lib/seo"; // Importing the getSEOTags function
 
 const checkItemVariants = {
