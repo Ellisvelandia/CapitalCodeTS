@@ -290,7 +290,6 @@ export default function Home() {
             <h1 className="text-3xl md:text-5xl md:text-center font-medium flex items-center gap-x-2 mx-auto justify-center">
               Nuestro{" "}
               <span className="text-blue-500 flex gap-x-1 items-center">
-                {" "}
                 <Image
                   src={"/icons/squiggle.svg"}
                   width={10000}

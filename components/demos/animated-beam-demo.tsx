@@ -58,9 +58,8 @@ export function AnimatedBeamMultipleOutputDemo({
           <Circle ref={div3Ref}>
             <Image
               src={"/logo/figma.png"}
-              width={10000}
-              height={10000}
-              className="w-6 h-6"
+              width={200} // Actual width of the image
+              height={100} // Actual height of the image
               alt="image"
               loading="lazy"
             />
@@ -76,8 +75,8 @@ export function AnimatedBeamMultipleOutputDemo({
           <Circle ref={div6Ref} className="size-16 bg-white">
             <Image
               src={"/logo/logo.webp"}
-              height={1000}
-              width={1000}
+              width={200} // Actual width of the image
+              height={100} // Actual height of the image
               alt="logo"
               loading="lazy"
             />
