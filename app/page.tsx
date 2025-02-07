@@ -1,6 +1,6 @@
 "use client";
 
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
 import BoxRevealDemo from "@/components/demos/box-reveal-demo";
 import { CoverDemo } from "@/components/demos/cover-demo";
 import { ScrollBasedVelocityDemo } from "@/components/demos/scroll-based-velocity-demo";
@@ -18,10 +18,19 @@ import LetsMakeThingsHappenSection from "@/components/ui/lets-make-things-happen
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import { getSEOTags } from "@/lib/seo";
+import Footer from "@/components/footer";
 
 // Dynamically import components
-const AnimatedBeamMultipleOutputDemoDynamic = dynamic(() => import('@/components/demos/animated-beam-demo').then(mod => mod.AnimatedBeamMultipleOutputDemo));
-const AnimatedShinyTextDemoDynamic = dynamic(() => import('@/components/demos/animated-shiny-text-demo').then(mod => mod.AnimatedShinyTextDemo));
+const AnimatedBeamMultipleOutputDemoDynamic = dynamic(() =>
+  import("@/components/demos/animated-beam-demo").then(
+    (mod) => mod.AnimatedBeamMultipleOutputDemo
+  )
+);
+const AnimatedShinyTextDemoDynamic = dynamic(() =>
+  import("@/components/demos/animated-shiny-text-demo").then(
+    (mod) => mod.AnimatedShinyTextDemo
+  )
+);
 
 const services = [
   {
@@ -108,9 +117,10 @@ export default function Home() {
             </h1>
             <p
               className="md:text-center text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
-              style={{ display: 'block' }}
+              style={{ display: "block" }}
             >
-              Especialistas en desarrollo de software y sitios web personalizados para empresas e individuos
+              Especialistas en desarrollo de software y sitios web
+              personalizados para empresas e individuos
             </p>
 
             <div
@@ -361,29 +371,7 @@ export default function Home() {
           <LetsMakeThingsHappenSection />
         </section>
 
-        <footer className="bg-[#fafafa] py-10  px-6 md:px-0 md:mx-auto border-t">
-          <div className="flex flex-col  justify-between gap-y-3 xl:w-4/5 2xl:w-[68%] mx-auto">
-            <h1 className="text-3xl md:text-5xl font-medium ">
-              <Image
-                src={"/logo/logo.svg"}
-                width={10000}
-                height={10000}
-                className="w-40"
-                alt="image"
-              />{" "}
-            </h1>
-            <p className="text-left  text-xl  text-gray-500">
-              capitalcodecol@gmail.com
-            </p>
-          </div>
-
-          <div className="flex md:justify-center gap-x-4 mt-10">
-            2025 Capital Code. Todos los derechos reservados.
-            <Link href="/" className="text-blue-500">
-              Política de Privacidad
-            </Link>
-          </div>
-        </footer>
+        <Footer />
       </main>
     </>
   );

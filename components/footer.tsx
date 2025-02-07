@@ -3,9 +3,12 @@ import Link from "next/link";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  
+
   return (
-    <footer className="bg-white py-10 px-6 md:px-0 md:mx-auto border-t" role="contentinfo">
+    <footer
+      className="bg-white py-10 px-6 md:px-0 md:mx-auto border-t"
+      role="contentinfo"
+    >
       <div className="flex flex-col justify-between gap-y-3 xl:w-4/5 2xl:w-[68%] mx-auto">
         <div className="text-3xl md:text-5xl font-medium">
           <Link href="/" aria-label="Capital Code - Página principal">
@@ -19,16 +22,12 @@ const Footer = () => {
             />
           </Link>
         </div>
-        <a
-          href="mailto:capitalcodecol@gmail.com"
-          className="text-left text-xl text-gray-900 hover:text-black transition-colors"
-          aria-label="Enviar correo electrónico"
-        >
+        <p className="text-left text-xl text-gray-900 hover:text-black transition-colors">
           capitalcodecol@gmail.com
-        </a>
+        </p>
       </div>
 
-      <div className="flex flex-col md:flex-row md:justify-center md:items-center gap-4 mt-10 text-gray-900">
+      <nav className="flex flex-col md:flex-row md:justify-center md:items-center gap-4 mt-10 text-gray-900">
         <p className="text-center md:text-left">
           {currentYear} Capital Code. Todos los derechos reservados.
         </p>
@@ -39,7 +38,7 @@ const Footer = () => {
         >
           Política de Privacidad
         </Link>
-      </div>
+      </nav>
     </footer>
   );
 };
