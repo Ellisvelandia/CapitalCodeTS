@@ -115,14 +115,16 @@ export default function Home() {
             <h1>
               <CoverDemo />
             </h1>
-            <p
-              className="md:text-center text-xl md:text-2xl my-6 md:my-10 md:w-4/5 mx-auto text-gray-500"
-              style={{ display: "block" }}
-            >
-              Especialistas en desarrollo de software y sitios web
-              personalizados para empresas e individuos
-            </p>
 
+            <div style={{ maxWidth: "90%", margin: "0 auto" }}>
+              <p
+                className="text-center md:text-2xl text-lg my-6 mx-auto text-gray-500"
+                style={{ display: "block" }}
+              >
+                Especialistas en desarrollo de software y sitios web
+                personalizados para empresas e individuos
+              </p>
+            </div>
             <div
               className="
                    flex 
