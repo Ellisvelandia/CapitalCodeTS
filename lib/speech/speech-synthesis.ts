@@ -217,7 +217,7 @@ export const speakMessage = async (
         
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.9;
+          utterance.rate = 1.0;
           utterance.pitch = 1.0;
           utterance.volume = 1.0;  // Set to full volume for iOS
         } else {
