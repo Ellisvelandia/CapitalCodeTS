@@ -1,83 +1,73 @@
-// app/api/chat/route.ts
-
-import { NextResponse } from 'next/server';
-import { buildChatbotPrompt } from '@/lib/chatbotPrompt';
+import { NextResponse } from "next/server";
+import { buildChatbotPrompt } from "@/lib/chatbotPrompt";
 import { createClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 
-// Define available models and their configurations
 const MODELS = [
   {
     name: "llama-3.3-70b-versatile",
     maxTokens: 32768,
-    priority: 1
+    priority: 1,
   },
   {
     name: "mixtral-8x7b-32768",
     maxTokens: 32768,
-    priority: 2
+    priority: 2,
   },
   {
     name: "llama-3.1-8b-instant",
     maxTokens: 8192,
-    priority: 3
-  }
+    priority: 3,
+  },
 ] as const;
 
-// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// Initialize Groq client
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY || ''
+  apiKey: process.env.GROQ_API_KEY || "",
 });
 
-// Helper function to analyze user sentiment
-const analyzeUserSentiment = (message: string): {
-  isNegative: boolean;
-  isDisinterested: boolean;
-  isShortAnswer: boolean;
-} => {
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const analyzeUserSentiment = (message: string) => {
   const lowercaseMsg = message.toLowerCase();
   return {
-    isNegative: lowercaseMsg.includes('no') || lowercaseMsg.includes('nada'),
-    isDisinterested: lowercaseMsg.length <= 5 || lowercaseMsg.includes('en nada'),
-    isShortAnswer: lowercaseMsg.length <= 10
+    isNegative: lowercaseMsg.includes("no") || lowercaseMsg.includes("nada"),
+    isDisinterested:
+      lowercaseMsg.length <= 5 || lowercaseMsg.includes("en nada"),
+    isShortAnswer: lowercaseMsg.length <= 10,
   };
 };
 
-// Helper function to try different models
-async function tryModel(message: string, conversationHistory: any[], modelConfig: typeof MODELS[number]) {
+async function tryModel(
+  message: string,
+  conversationHistory: any[],
+  modelConfig: (typeof MODELS)[number]
+) {
   try {
-    console.log(`Attempting to use model: ${modelConfig.name}`);
-    
     const sentiment = analyzeUserSentiment(message);
     let temperature = 0.7;
     let maxTokens = Math.min(1000, modelConfig.maxTokens);
 
-    // Adjust model parameters based on user sentiment
     if (sentiment.isDisinterested) {
-      temperature = 0.5; // More focused responses
-      maxTokens = 100; // Shorter responses
+      temperature = 0.5;
+      maxTokens = 100;
     } else if (sentiment.isNegative) {
-      temperature = 0.6; // Balanced responses
-      maxTokens = 150; // Moderate length
+      temperature = 0.6;
+      maxTokens = 150;
     } else if (sentiment.isShortAnswer) {
-      temperature = 0.7; // More creative
-      maxTokens = 200; // Slightly longer
+      temperature = 0.7;
+      maxTokens = 200;
     }
 
     const prompt = buildChatbotPrompt(message, conversationHistory);
-    
+
     const chatCompletion = await groq.chat.completions.create({
       messages: [
-        {
-          role: "system",
-          content: prompt,
-        },
+        { role: "system", content: prompt },
         { role: "user", content: message },
       ],
       model: modelConfig.name,
@@ -86,89 +76,111 @@ async function tryModel(message: string, conversationHistory: any[], modelConfig
     });
 
     if (!chatCompletion.choices?.[0]?.message?.content) {
-      throw new Error('No se recibió respuesta del servidor');
+      throw new Error("No response from server");
     }
 
     return chatCompletion.choices[0].message.content;
   } catch (error: any) {
-    console.error(`Error with model ${modelConfig.name}:`, {
-      error: error?.error || error,
-      message: error?.message,
-      status: error?.status,
-      code: error?.error?.code
-    });
-    
-    if (error?.error?.code === 'rate_limit_exceeded' || 
-        (error?.message && error.message.toLowerCase().includes('rate limit'))) {
-      throw error;
+    const isRateLimit =
+      error?.error?.code === "rate_limit_exceeded" ||
+      error?.message?.includes("rate limit") ||
+      error?.status === 429;
+
+    if (isRateLimit) {
+      const resetTime = error?.headers?.["retry-after"] || 5;
+      throw {
+        ...error,
+        retryAfter: resetTime,
+        isRateLimit: true,
+      };
     }
-    
-    throw new Error(`Error with ${modelConfig.name}: ${error?.error?.message || error?.message || 'Unknown error'}`);
+
+    console.error(`Error with model ${modelConfig.name}:`, error);
+    throw new Error(
+      `Model error: ${
+        error?.error?.message || error?.message || "Unknown error"
+      }`
+    );
   }
 }
 
-// Helper function to sanitize text
 const sanitizeText = (text: string): string => {
   return text
-    .replace(/[^\p{L}\p{N}\s.,¿?¡!()]/gu, '')  // Only allow letters, numbers, spaces, and basic punctuation
-    .replace(/\s+/g, ' ')                       // Replace multiple spaces with single space
+    .replace(/[^\p{L}\p{N}\s.,¿?¡!()]/gu, "")
+    .replace(/\s+/g, " ")
     .trim();
 };
 
-// Helper function to clean text for display
 const cleanTextForDisplay = (text: string): string => {
   const cleaned = text
-    .replace(/[^\p{L}\p{N}\s.,¿?¡!()[\]]/gu, '') // Allow markdown characters for links
-    .replace(/\s+/g, ' ')
+    .replace(/[^\p{L}\p{N}\s.,¿?¡!()[\]]/gu, "")
+    .replace(/\s+/g, " ")
     .trim();
-  
-  // If the text is empty after cleaning, return a friendly message
-  return cleaned || "Lo siento, no pude entender el mensaje. ¿Podrías reformularlo?";
+
+  return (
+    cleaned || "Lo siento, no pude entender el mensaje. ¿Podrías reformularlo?"
+  );
 };
 
-// Helper function to generate navigation suggestions
 const generateNavigationSuggestion = (message: string): string => {
   const lowercaseMsg = sanitizeText(message.toLowerCase());
-  let suggestion = '';
+  let suggestion = "";
 
-  if (lowercaseMsg.includes('proyectos') || lowercaseMsg.includes('portafolio') || lowercaseMsg.includes('trabajos')) {
-    suggestion = 'Me encantaría mostrarte nuestro trabajo. 👉 [Aquí puedes ver todos nuestros proyectos](proyectos) 🎯';
+  if (
+    lowercaseMsg.includes("proyectos") ||
+    lowercaseMsg.includes("portafolio") ||
+    lowercaseMsg.includes("trabajos")
+  ) {
+    suggestion =
+      "Me encantaría mostrarte nuestro trabajo. 👉 [Aquí puedes ver todos nuestros proyectos](proyectos) 🎯";
   }
-  
-  if (lowercaseMsg.includes('reunión') || lowercaseMsg.includes('cita') || lowercaseMsg.includes('videollamada') || lowercaseMsg.includes('llamada')) {
-    const meetingSuggestion = '¡Perfecto! Me alegra tu interés. 📅 [Aquí puedes agendar una llamada](llamada) 🤝';
-    suggestion = suggestion ? `${suggestion}\n\n${meetingSuggestion}` : meetingSuggestion;
+
+  if (
+    lowercaseMsg.includes("reunión") ||
+    lowercaseMsg.includes("cita") ||
+    lowercaseMsg.includes("videollamada") ||
+    lowercaseMsg.includes("llamada")
+  ) {
+    const meetingSuggestion =
+      "¡Perfecto! Me alegra tu interés. 📅 [Aquí puedes agendar una llamada](llamada) 🤝";
+    suggestion = suggestion
+      ? `${suggestion}\n\n${meetingSuggestion}`
+      : meetingSuggestion;
   }
 
   return suggestion;
 };
 
-// Helper function to detect language
 const detectLanguage = (text: string): string => {
-  // Simple language detection based on common Spanish words
-  const spanishWords = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'porque', 'qué', 'cómo', 'cuándo', 'dónde'];
+  const spanishWords = [
+    "el",
+    "la",
+    "los",
+    "las",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "y",
+    "o",
+    "pero",
+    "porque",
+    "qué",
+    "cómo",
+    "cuándo",
+    "dónde",
+  ];
   const words = text.toLowerCase().split(/\s+/);
-  const spanishWordCount = words.filter(word => spanishWords.includes(word)).length;
-  
-  return spanishWordCount > 0 ? 'es-ES' : 'en-US';
-};
+  const spanishWordCount = words.filter((word) =>
+    spanishWords.includes(word)
+  ).length;
 
-/**
- * Represents a chat message in the conversation.
- * @interface Message
- * @property {string} content - The text content of the message
- * @property {MessageRole} role - The role of the message sender (system, user, or assistant)
- * @property {string} language - The language of the message
- */
-interface Message {
-  content: string;
-  role: 'system' | 'user' | 'assistant';
-  language?: string;
-}
+  return spanishWordCount > 0 ? "es-ES" : "en-US";
+};
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.GROQ_API_KEY?.startsWith('gsk_')) {
+    if (!process.env.GROQ_API_KEY?.startsWith("gsk_")) {
       return NextResponse.json(
         { error: "API key no configurada correctamente" },
         { status: 500 }
@@ -176,75 +188,85 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    
-    // Validate the messages array exists and has content
-    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
+
+    if (
+      !body.messages ||
+      !Array.isArray(body.messages) ||
+      body.messages.length === 0
+    ) {
       return NextResponse.json(
         { error: "Formato de mensaje inválido" },
         { status: 400 }
       );
     }
 
-    // Clean and validate all messages in the conversation
-    const messages = body.messages.map((msg: Message) => ({
+    const messages = body.messages.map((msg: any) => ({
       ...msg,
-      content: cleanTextForDisplay(msg.content)
+      content: cleanTextForDisplay(msg.content),
     }));
 
     const lastMessage = messages[messages.length - 1]?.content;
 
     if (!lastMessage) {
-      return NextResponse.json(
-        { error: "Mensaje vacío" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Mensaje vacío" }, { status: 400 });
     }
 
-    // Generate navigation suggestions if applicable
     const navigationSuggestion = generateNavigationSuggestion(lastMessage);
-
-    // Build the prompt
     const prompt = buildChatbotPrompt(lastMessage, messages);
+    let lastError: any = null;
 
-    // Get response from model
-    const completion = await groq.chat.completions.create({
-      messages: [
-        { role: "system", content: prompt },
-        ...messages,
-        ...(navigationSuggestion ? [{ 
-          role: "assistant", 
-          content: navigationSuggestion 
-        }] : [])
-      ],
-      model: MODELS[0].name,
-      temperature: 0.7,
-      max_tokens: Math.min(MODELS[0].maxTokens, 2048),
-    });
+    for (const modelConfig of [...MODELS].sort((a, b) => a.priority - b.priority)) {
+      try {
+        const maxRetries = 3;
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            const completion = await tryModel(
+              lastMessage,
+              messages,
+              modelConfig
+            );
+            let response =
+              completion || "Lo siento, no pude procesar tu solicitud.";
+            response = cleanTextForDisplay(response);
 
-    let response = completion.choices[0]?.message?.content || "Lo siento, no pude procesar tu solicitud.";
+            if (
+              navigationSuggestion &&
+              !response.includes(navigationSuggestion)
+            ) {
+              response = navigationSuggestion;
+            }
 
-    // Clean the response text while preserving markdown links
-    response = cleanTextForDisplay(response);
-
-    // If the model didn't use our navigation suggestion, we'll add it
-    if (navigationSuggestion && !response.includes(navigationSuggestion)) {
-      response = navigationSuggestion;
+            const language = detectLanguage(response);
+            return NextResponse.json({ content: response, language });
+          } catch (error: any) {
+            if (error?.isRateLimit && attempt < maxRetries) {
+              const waitTime =
+                Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+              await delay(waitTime);
+              continue;
+            }
+            throw error;
+          }
+        }
+      } catch (error: any) {
+        lastError = error;
+        if (error?.isRateLimit) {
+          continue;
+        }
+        break;
+      }
     }
 
-    const language = detectLanguage(response);
-
-    return NextResponse.json({
-      content: response,
-      language: language
-    });
+    throw lastError || new Error("All models failed to respond");
   } catch (error: any) {
-    console.error('Error in chat route:', error);
+    console.error("Error in chat route:", error);
     return NextResponse.json(
-      { 
-        error: "Lo siento, ocurrió un error al procesar tu mensaje. Por favor, intenta de nuevo.", 
-        details: error.message 
+      {
+        error:
+          "Lo siento, estamos experimentando alta demanda. Por favor, inténtalo de nuevo en 1-2 minutos.",
+        details: error.message,
       },
-      { status: 500 }
+      { status: error?.isRateLimit ? 429 : 500 }
     );
   }
 }

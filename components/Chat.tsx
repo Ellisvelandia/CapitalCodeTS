@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown from "react-markdown";
 import {
   FaTimes,
   FaComment,
@@ -12,7 +12,6 @@ import {
 } from "react-icons/fa";
 import { speakMessage, stopSpeaking } from "@/lib/speech/speech-synthesis";
 
-// Define the chat message structure.
 interface ChatMessage {
   type: "user" | "bot";
   content: string;
@@ -20,16 +19,15 @@ interface ChatMessage {
 }
 
 export default function Chat() {
-  // UI State
   const [isOpen, setIsOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastSentTime, setLastSentTime] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Quick questions for easy access
   const quickQuestions = [
     "¿Qué servicios ofrecen?",
     "¿Cuáles son los precios?",
@@ -44,6 +42,13 @@ export default function Chat() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    const now = Date.now();
+
+    if (now - lastSentTime < 3000) {
+      alert("Por favor, espera unos momentos antes de enviar otro mensaje");
+      return;
+    }
+
     if (!inputMessage.trim() || isLoading) return;
 
     stopSpeaking();
@@ -69,11 +74,18 @@ export default function Chat() {
       if (!response.ok) {
         const errorData = await response.json();
         console.error("Server error details:", errorData);
+
+        if (response.status === 429) {
+          throw new Error(
+            "Estamos recibiendo muchas solicitudes. Por favor, inténtalo de nuevo en unos minutos."
+          );
+        }
+
         throw new Error(errorData.error || "Error del servidor");
       }
 
       const data = await response.json();
-      
+
       if (!data.content) {
         throw new Error("No se recibió respuesta del servidor");
       }
@@ -83,11 +95,10 @@ export default function Chat() {
           const newMessage: ChatMessage = {
             type: "bot",
             content: response.content,
-            language: response.language || "es-ES"
+            language: response.language || "es-ES",
           };
-          setMessages(prev => [...prev, newMessage]);
-          
-          // Speak the message with the correct language
+          setMessages((prev) => [...prev, newMessage]);
+
           if (!isMuted) {
             await speakMessage(response.content, false, newMessage.language);
           }
@@ -95,16 +106,16 @@ export default function Chat() {
       };
 
       await handleBotResponse(data);
-
     } catch (error: any) {
       console.error("Chat error:", error);
       const errorMsg = error.message || "Ocurrió un error inesperado";
-      const botMsg: ChatMessage = { 
-        type: "bot", 
-        content: `Lo siento, ${errorMsg.toLowerCase()}. Por favor, intenta nuevamente en unos momentos.` 
+      const botMsg: ChatMessage = {
+        type: "bot",
+        content: `⚠️ ${errorMsg}`,
       };
       setMessages((prev) => [...prev, botMsg]);
     } finally {
+      setLastSentTime(Date.now());
       setIsLoading(false);
     }
   };
@@ -114,21 +125,21 @@ export default function Chat() {
       setIsExpanded(false);
       setTimeout(() => {
         setIsOpen(false);
-      }, 300); // Wait for collapse animation
+      }, 300);
     } else {
-      setIsOpen(prev => !prev);
+      setIsOpen((prev) => !prev);
     }
   };
 
   const toggleExpand = () => {
-    setIsExpanded(prev => !prev);
+    setIsExpanded((prev) => !prev);
   };
 
   return (
     <div
-      className={`fixed ${isExpanded ? 'inset-0 z-50' : 'bottom-8 right-8 z-50'} ${
-        isOpen ? "animate-fade-in" : ""
-      } transition-all duration-300`}
+      className={`fixed ${
+        isExpanded ? "inset-0 z-50" : "bottom-8 right-8 z-50"
+      } ${isOpen ? "animate-fade-in" : ""} transition-all duration-300`}
     >
       {!isExpanded && (
         <button
@@ -145,9 +156,9 @@ export default function Chat() {
           role="dialog"
           aria-labelledby="chatbot-heading"
           className={`${
-            isExpanded 
-              ? 'fixed inset-0 w-full h-full'
-              : 'fixed bottom-24 right-4 w-full max-w-xs sm:max-w-md h-[70vh]'
+            isExpanded
+              ? "fixed inset-0 w-full h-full"
+              : "fixed bottom-24 right-4 w-full max-w-xs sm:max-w-md h-[70vh]"
           } bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col transition-all duration-300`}
         >
           <div className="p-4 bg-black text-white flex items-center justify-between rounded-t-xl shadow-md">
@@ -166,7 +177,11 @@ export default function Chat() {
                 aria-label={isExpanded ? "Minimizar chat" : "Expandir chat"}
                 className="p-1.5 hover:bg-gray-800 rounded-full focus:outline-none"
               >
-                {isExpanded ? <FaCompressAlt size={20} /> : <FaExpandAlt size={20} />}
+                {isExpanded ? (
+                  <FaCompressAlt size={20} />
+                ) : (
+                  <FaExpandAlt size={20} />
+                )}
               </button>
             </div>
             <button
@@ -199,14 +214,19 @@ export default function Chat() {
                   }`}
                 >
                   {message.type === "bot" ? (
-                    <ReactMarkdown 
+                    <ReactMarkdown
                       className="whitespace-pre-wrap prose dark:prose-invert max-w-none prose-sm"
                       components={{
                         a: ({ node, ...props }) => {
-                          const href = props.href === 'proyectos' ? '/showcase' : props.href === 'llamada' ? '/meeting' : props.href;
+                          const href =
+                            props.href === "proyectos"
+                              ? "/showcase"
+                              : props.href === "llamada"
+                              ? "/meeting"
+                              : props.href;
                           return (
-                            <a 
-                              {...props} 
+                            <a
+                              {...props}
                               className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"
                               onClick={(e) => {
                                 e.preventDefault();
@@ -219,7 +239,7 @@ export default function Chat() {
                         },
                         em: ({ node, ...props }) => (
                           <span {...props} className="underline decoration-2" />
-                        )
+                        ),
                       }}
                     >
                       {message.content}
@@ -240,7 +260,6 @@ export default function Chat() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Questions */}
           <div className="p-4 bg-gray-50 dark:bg-gray-800 border-t border-gray-200">
             <div className="flex flex-wrap gap-2">
               {quickQuestions.map((q, i) => (
