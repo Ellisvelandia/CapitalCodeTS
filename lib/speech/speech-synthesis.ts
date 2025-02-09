@@ -34,10 +34,36 @@ const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
 // Helper: Get the best available voice
 const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | null> => {
   const voices = await initializeVoices();
+  
+  // Quality voice providers
+  const preferredProviders = ["Google", "Microsoft", "Natural"];
+  
+  // Try to find the best quality voice in the following order:
   return (
-    voices.find((v) => v.lang === lang && v.name.includes("Google")) ||
+    // 1. Premium/enhanced voice in exact language
+    voices.find((v) => 
+      v.lang === lang && 
+      (v.name.toLowerCase().includes("premium") || 
+       v.name.toLowerCase().includes("enhanced") ||
+       preferredProviders.some(provider => v.name.includes(provider)))
+    ) ||
+    // 2. Any Google/Microsoft voice in exact language
+    voices.find((v) => 
+      v.lang === lang && 
+      preferredProviders.some(provider => v.name.includes(provider))
+    ) ||
+    // 3. Any voice in exact language
     voices.find((v) => v.lang === lang) ||
+    // 4. Premium/enhanced voice in base language
+    voices.find((v) => 
+      v.lang.startsWith(lang.split("-")[0]) && 
+      (v.name.toLowerCase().includes("premium") || 
+       v.name.toLowerCase().includes("enhanced") ||
+       preferredProviders.some(provider => v.name.includes(provider)))
+    ) ||
+    // 5. Any voice in base language
     voices.find((v) => v.lang.startsWith(lang.split("-")[0])) ||
+    // 6. First available voice as last resort
     voices[0] ||
     null
   );
