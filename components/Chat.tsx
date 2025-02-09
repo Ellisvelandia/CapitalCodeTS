@@ -6,6 +6,8 @@ import {
   FaVolumeUp,
   FaVolumeMute,
   FaPaperPlane,
+  FaExpandAlt,
+  FaCompressAlt,
 } from "react-icons/fa";
 import { speakMessage, stopSpeaking } from "@/lib/speech/speech-synthesis";
 
@@ -17,14 +19,15 @@ interface ChatMessage {
 
 export default function Chat() {
   // UI State
-  const [isOpen, setIsOpen] = useState(false); // Toggle chat window
-  const [isMuted, setIsMuted] = useState(false); // Mute/unmute voice
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Quick questions for easy access (clear CTAs)
+  // Quick questions for easy access
   const quickQuestions = [
     "¿Qué servicios ofrecen?",
     "¿Cuáles son los precios?",
@@ -33,17 +36,14 @@ export default function Chat() {
     "¿Cómo contactar con soporte?",
   ];
 
-  // Auto-scroll to the bottom whenever messages update (improves engagement)
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle sending a message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
 
-    // Stop any ongoing speech before sending new message
     stopSpeaking();
 
     const userMsg = inputMessage.trim();
@@ -77,7 +77,6 @@ export default function Chat() {
         throw new Error("No se recibió respuesta del servidor");
       }
 
-      // Log which model was used (if provided)
       if (data.model) {
         console.log(`Response generated using model: ${data.model}`);
       }
@@ -85,14 +84,12 @@ export default function Chat() {
       const botMsg: ChatMessage = { type: "bot", content: botMessageContent };
       setMessages((prev) => [...prev, botMsg]);
 
-      // Add a small delay before starting speech
       if (!isMuted) {
         try {
           await new Promise((resolve) => setTimeout(resolve, 100));
           await speakMessage(botMessageContent, isMuted);
         } catch (error) {
           console.error("Error speaking message:", error);
-          // Don't throw here - we still want to show the message even if speech fails
         }
       }
     } catch (error: any) {
@@ -108,43 +105,71 @@ export default function Chat() {
     }
   };
 
-  // Toggle the chat window open/closed.
   const toggleChat = () => {
-    setIsOpen((prev) => !prev);
+    if (isExpanded) {
+      setIsExpanded(false);
+      setTimeout(() => {
+        setIsOpen(false);
+      }, 300); // Wait for collapse animation
+    } else {
+      setIsOpen(prev => !prev);
+    }
+  };
+
+  const toggleExpand = () => {
+    setIsExpanded(prev => !prev);
   };
 
   return (
     <div
-      className={`fixed bottom-8 right-8 z-50 ${
+      className={`fixed ${isExpanded ? 'inset-0 z-50' : 'bottom-8 right-8 z-50'} ${
         isOpen ? "animate-fade-in" : ""
-      }`}
+      } transition-all duration-300`}
     >
-      {/* Chat Toggle Button - Clear CTA with modern gradient */}
-      <button
-        onClick={toggleChat}
-        className="w-14 h-14 bg-black rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all focus:outline-none"
-        aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
-      >
-        {isOpen ? <FaTimes size={28} /> : <FaComment size={28} />}
-      </button>
+      {!isExpanded && (
+        <button
+          onClick={toggleChat}
+          className="w-14 h-14 bg-black rounded-full flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all focus:outline-none"
+          aria-label={isOpen ? "Cerrar chat" : "Abrir chat"}
+        >
+          {isOpen ? <FaTimes size={28} /> : <FaComment size={28} />}
+        </button>
+      )}
 
-      {/* Chat Window */}
       {isOpen && (
         <div
           role="dialog"
           aria-labelledby="chatbot-heading"
-          className="fixed bottom-24 right-4 w-full max-w-xs sm:max-w-md h-[70vh] bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col transition-transform transform-gpu"
+          className={`${
+            isExpanded 
+              ? 'fixed inset-0 w-full h-full'
+              : 'fixed bottom-24 right-4 w-full max-w-xs sm:max-w-md h-[70vh]'
+          } bg-white dark:bg-gray-800 rounded-xl shadow-lg flex flex-col transition-all duration-300`}
         >
-          {/* Chat Header - Modern look, clear typography */}
-          <div className="p-4 bg-black text-white flex justify-between items-center rounded-t-xl shadow-md">
-            <h2 id="chatbot-heading" className="font-bold text-2xl">
-              Capital Code
-            </h2>
+          <div className="p-4 bg-black text-white flex items-center justify-between rounded-t-xl shadow-md">
+            <div className="flex items-center gap-2">
+              {isExpanded && (
+                <button
+                  onClick={toggleChat}
+                  className="p-1.5 hover:bg-gray-800 rounded-full focus:outline-none"
+                  aria-label="Cerrar chat"
+                >
+                  <FaTimes size={20} />
+                </button>
+              )}
+              <button
+                onClick={toggleExpand}
+                aria-label={isExpanded ? "Minimizar chat" : "Expandir chat"}
+                className="p-1.5 hover:bg-gray-800 rounded-full focus:outline-none"
+              >
+                {isExpanded ? <FaCompressAlt size={20} /> : <FaExpandAlt size={20} />}
+              </button>
+            </div>
             <button
               onClick={() => {
                 setIsMuted(!isMuted);
                 if (!isMuted) {
-                  stopSpeaking(); // Stop speech when muting
+                  stopSpeaking();
                 }
               }}
               aria-label={isMuted ? "Activar sonido" : "Silenciar"}
@@ -154,36 +179,29 @@ export default function Chat() {
             </button>
           </div>
 
-          {/* Chat Messages - Clean, uncluttered design */}
-          <div
-            className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 space-y-4 rounded-b-xl"
-            aria-live="assertive"
-            aria-atomic="true"
-          >
-            {messages.map((msg, i) => (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((message, index) => (
               <div
-                key={i}
+                key={index}
                 className={`flex ${
-                  msg.type === "user" ? "justify-end" : "justify-start"
+                  message.type === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 <div
-                  className={`p-3 rounded-xl max-w-[80%] transition-all duration-300 ${
-                    msg.type === "user"
-                      ? "bg-black text-white shadow-md"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white shadow-lg"
+                  className={`max-w-[85%] p-3 rounded-xl ${
+                    message.type === "user"
+                      ? "bg-black text-white rounded-br-none"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none"
                   }`}
                 >
-                  <p className="text-sm">{msg.content}</p>
+                  <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-800 p-3 rounded-xl shadow-md">
-                  <span className="animate-pulse text-gray-700 dark:text-gray-300 text-sm">
-                    El asistente está escribiendo...
-                  </span>
+                <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-xl rounded-bl-none">
+                  <p>Escribiendo...</p>
                 </div>
               </div>
             )}
@@ -209,35 +227,24 @@ export default function Chat() {
             </div>
           </div>
 
-          {/* Chat Input */}
-          <form
-            onSubmit={handleSend}
-            className="p-4 border-t bg-gray-100 dark:bg-gray-800 rounded-b-xl"
-          >
-            <div className="flex gap-2">
+          <div className="p-4 border-t dark:border-gray-700">
+            <form onSubmit={handleSend} className="flex gap-2">
               <input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Escribe tu mensaje..."
-                className="flex-1 p-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                disabled={isLoading}
-                aria-label="Entrada de mensaje"
+                className="flex-1 p-2 border dark:border-gray-700 rounded-lg focus:outline-none focus:border-black dark:bg-gray-700 dark:text-white"
               />
               <button
                 type="submit"
-                disabled={isLoading}
-                className={`p-2 bg-black text-white rounded-lg transition-colors ${
-                  isLoading
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-gray-900"
-                }`}
-                aria-label="Enviar mensaje"
+                disabled={!inputMessage.trim() || isLoading}
+                className="p-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <FaPaperPlane size={20} />
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       )}
     </div>
