@@ -143,6 +143,40 @@ const getVoice = async (
            !navigator.userAgent.toLowerCase().includes('edge');
   };
 
+  // Helper: Check if it's Safari browser
+  const isSafari = () => {
+    return typeof window !== "undefined" && 
+           navigator.userAgent.toLowerCase().includes('safari') &&
+           !navigator.userAgent.toLowerCase().includes('chrome');
+  };
+
+  // Helper: Rate the voice quality for iOS (0-10)
+  const getIOSVoiceQualityScore = (v: SpeechSynthesisVoice): number => {
+    const name = v.name.toLowerCase();
+    let score = 0;
+
+    // Base score for language
+    if (v.lang === 'es-ES') score += 3;
+    
+    // Premium voices typically have these indicators
+    if (name.includes('premium')) score += 2;
+    if (name.includes('enhanced')) score += 2;
+    if (name.includes('natural')) score += 2;
+    
+    // Known high-quality iOS voices
+    if (name.includes('mónica') || name.includes('monica')) score += 3;
+    if (name.includes('jorge') && v.lang === 'es-ES') score += 2;
+    
+    // Built-in iOS indicators
+    if (v.localService) score += 1;
+    if (name.includes('siri')) score += 1;
+    
+    // Prefer non-compact voices
+    if (name.includes('compact')) score -= 2;
+    
+    return Math.min(10, Math.max(0, score));
+  };
+
   // Log available voices for debugging
   console.debug('Available Spanish voices:', voices.filter(v => 
     v.lang.startsWith('es')).map(v => ({
@@ -202,13 +236,46 @@ const getVoice = async (
   }
 
   if (isIOS()) {
-    // For iOS, prioritize Spanish (Spain) voice first
+    // Special handling for iOS Safari
+    if (isSafari()) {
+      // Get all Spanish voices and sort by quality score
+      const spanishVoices = voices
+        .filter(v => 
+          v.lang.startsWith('es') && 
+          !isMaleVoice(v))
+        .sort((a, b) => {
+          const scoreA = getIOSVoiceQualityScore(a);
+          const scoreB = getIOSVoiceQualityScore(b);
+          return scoreB - scoreA; // Sort by highest score first
+        });
+
+      if (spanishVoices.length > 0) {
+        const bestVoice = spanishVoices[0];
+        const score = getIOSVoiceQualityScore(bestVoice);
+        
+        console.debug('Selected best iOS Safari voice:', {
+          name: bestVoice.name,
+          lang: bestVoice.lang,
+          isLocal: bestVoice.localService,
+          qualityScore: score,
+          allScores: spanishVoices.map(v => ({
+            name: v.name,
+            score: getIOSVoiceQualityScore(v)
+          }))
+        });
+        
+        return bestVoice;
+      }
+    }
+
+    // For other iOS browsers or if no Safari voices found
     const spainVoice = voices.find(
       (v) =>
         v.lang === "es-ES" &&
         !isMaleVoice(v) &&
-        (v.name.toLowerCase().includes('mónica') || // Common high-quality Spanish voice on iOS
+        (v.name.toLowerCase().includes('mónica') || 
          v.name.toLowerCase().includes('monica') ||
+         (v.name.toLowerCase().includes('siri') && v.localService) ||
          v.name.toLowerCase().includes('spain'))
     );
 
@@ -216,32 +283,28 @@ const getVoice = async (
       console.debug('Selected Spanish (Spain) iOS voice:', {
         name: spainVoice.name,
         lang: spainVoice.lang,
-        isLocal: spainVoice.localService
+        isLocal: spainVoice.localService,
+        qualityScore: getIOSVoiceQualityScore(spainVoice)
       });
       return spainVoice;
     }
 
     // If no Spain voice found, try to find the best possible voice
     const bestVoice = 
-      // 1. Try other high-quality Spanish voices
+      // 1. Try high-quality local voices
       voices.find(
         (v) =>
           v.lang === "es-ES" &&
           !isMaleVoice(v) &&
-          isHighQualityVoice(v)
+          v.localService &&
+          getIOSVoiceQualityScore(v) >= 5
       ) ||
-      // 2. Try natural-sounding Spanish (Spain) voices
+      // 2. Try any high-quality Spanish voice
       voices.find(
         (v) =>
           v.lang === "es-ES" &&
           !isMaleVoice(v) &&
-          isNaturalVoice(v)
-      ) ||
-      // 3. Try Paulina Mobile as fallback
-      voices.find(
-        (v) =>
-          v.name.toLowerCase().includes('paulina') &&
-          v.name.toLowerCase().includes('mobile')
+          getIOSVoiceQualityScore(v) >= 3
       );
 
     if (bestVoice) {
@@ -249,17 +312,17 @@ const getVoice = async (
         name: bestVoice.name,
         lang: bestVoice.lang,
         isLocal: bestVoice.localService,
-        isHighQuality: isHighQualityVoice(bestVoice),
-        isNatural: isNaturalVoice(bestVoice)
+        qualityScore: getIOSVoiceQualityScore(bestVoice)
       });
       return bestVoice;
     }
 
-    // If no high-quality voice found, try any Spanish (Spain) voice
+    // Last resort: any Spanish voice with decent quality
     const fallbackVoice = voices.find(
       (v) =>
-        v.lang === "es-ES" &&
-        !isMaleVoice(v)
+        v.lang.startsWith('es') &&
+        !isMaleVoice(v) &&
+        getIOSVoiceQualityScore(v) > 0
     ) || null;
 
     if (fallbackVoice) {
@@ -267,8 +330,7 @@ const getVoice = async (
         name: fallbackVoice.name,
         lang: fallbackVoice.lang,
         isLocal: fallbackVoice.localService,
-        isHighQuality: isHighQualityVoice(fallbackVoice),
-        isNatural: isNaturalVoice(fallbackVoice)
+        qualityScore: getIOSVoiceQualityScore(fallbackVoice)
       });
     }
 
