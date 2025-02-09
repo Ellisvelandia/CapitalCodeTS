@@ -96,12 +96,33 @@ const getVoice = async (
   const isMaleVoice = (v: SpeechSynthesisVoice) =>
     v.name.toLowerCase().includes("male");
 
+  // Helper: Check if voice is likely to be high quality
+  const isHighQualityVoice = (v: SpeechSynthesisVoice) => {
+    const name = v.name.toLowerCase();
+    return (
+      name.includes('google') ||
+      name.includes('premium') ||
+      name.includes('enhanced') ||
+      (v.localService && !name.includes('compact'))
+    );
+  };
+
+  // Log available voices for debugging
+  console.debug('Available Spanish voices:', voices.filter(v => 
+    v.lang.startsWith('es')).map(v => ({
+      name: v.name,
+      lang: v.lang,
+      isLocal: v.localService,
+      isDefault: v.default
+    }))
+  );
+
   // Check if we're in Firefox
   const isFirefox = typeof window !== "undefined" && navigator.userAgent.toLowerCase().includes('firefox');
 
   if (isFirefox) {
     // For Firefox, prioritize Spanish voices
-    return (
+    const firefoxVoice = 
       // 1. Try to find any Spanish (Spain) voice
       voices.find((v) => 
         v.lang === "es-ES" && 
@@ -117,36 +138,49 @@ const getVoice = async (
       voices.find((v) => 
         spanishVariants.includes(v.lang) && 
         !isMaleVoice(v)
-      ) ||
-      null
-    );
+      );
+    
+    return firefoxVoice || null;
   }
 
   if (isIOS()) {
-    // For iOS, prioritize high-quality female voices
-    const femaleVoice = voices.find(
+    // For iOS, try to find the best possible voice
+    const bestVoice = voices.find(
       (v) =>
         v.lang === "es-ES" &&
         !isMaleVoice(v) &&
-        v.localService &&  // Prefer local voices for better quality
-        !v.name.toLowerCase().includes("compact")
+        isHighQualityVoice(v)
     );
 
-    // If we found a good female voice, use it
-    if (femaleVoice) {
-      return femaleVoice;
+    if (bestVoice) {
+      console.debug('Selected high-quality iOS voice:', {
+        name: bestVoice.name,
+        lang: bestVoice.lang,
+        isLocal: bestVoice.localService
+      });
+      return bestVoice;
     }
 
-    // Fallback to any Spanish female voice
-    return voices.find(
+    // If no high-quality voice found, try any Spanish voice
+    const fallbackVoice = voices.find(
       (v) =>
         spanishVariants.includes(v.lang) &&
         !isMaleVoice(v)
     ) || null;
+
+    if (fallbackVoice) {
+      console.debug('Using fallback iOS voice:', {
+        name: fallbackVoice.name,
+        lang: fallbackVoice.lang,
+        isLocal: fallbackVoice.localService
+      });
+    }
+
+    return fallbackVoice;
   }
 
   // For non-iOS devices
-  return (
+  const foundVoice = 
     // 1. Try Spanish (Spain) voices
     voices.find(
       (v) =>
@@ -159,8 +193,7 @@ const getVoice = async (
       (v) =>
         spanishVariants.includes(v.lang) &&
         !isMaleVoice(v) &&
-        (v.name.toLowerCase().includes("premium") ||
-          v.name.toLowerCase().includes("enhanced"))
+        (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
     ) ||
     // 3. Try any Google/Microsoft Spanish voice
     voices.find(
@@ -172,9 +205,9 @@ const getVoice = async (
     // 4. Any Spanish voice
     voices.find(
       (v) => spanishVariants.includes(v.lang) && !isMaleVoice(v)
-    ) ||
-    null
-  );
+    );
+    
+  return foundVoice || null;
 };
 
 // Helper: Split text into smaller chunks
@@ -291,9 +324,19 @@ export const speakMessage = async (
 
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.98;     // Very close to natural speed
-          utterance.pitch = 1.0;     // Keep natural pitch
-          utterance.volume = 0.95;   // Slightly reduced volume for clarity
+          // Use more natural-sounding parameters
+          utterance.rate = 1.0;      // Normal speed
+          utterance.pitch = 1.0;     // Natural pitch
+          utterance.volume = 1.0;    // Full volume
+          
+          // Add some subtle improvements
+          if (typeof utterance.voice !== 'undefined' && utterance.voice) {
+            console.debug('Using voice settings:', {
+              name: utterance.voice.name,
+              rate: utterance.rate,
+              pitch: utterance.pitch
+            });
+          }
         } else {
           utterance.rate = 1.1;
           utterance.pitch = 1.0;
