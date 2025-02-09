@@ -27,6 +27,7 @@ export default function Chat() {
   // Quick questions for easy access (clear CTAs)
   const quickQuestions = [
     "¿Qué servicios ofrecen?",
+    "¿Cuáles son los precios?",
     "¿Cuáles son los pasos del proceso?",
     "¿Qué garantías tienen?",
     "¿Cómo contactar con soporte?",

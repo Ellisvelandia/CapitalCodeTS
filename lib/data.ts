@@ -4,7 +4,7 @@ export const services = [
   {
     title: "Desarrollo Web Personalizado",
     description:
-      "Creamos sitios web únicos y personalizados que reflejan la identidad de tu marca y cumplen tus objetivos comerciales",
+      "Creamos sitios web únicos y personalizados que reflejan la identidad de tu marca. Sitio web básico desde $300 USD (hasta 4 páginas, $20 USD por página adicional). Incluimos hosting y dominio.",
   },
   {
     title: "Desarrollo de Software",
@@ -22,14 +22,19 @@ export const services = [
       "Asesoramos en la selección e implementación de tecnologías para maximizar el potencial de tu negocio",
   },
   {
+    title: "Desarrollo Web + Chat IA",
+    description:
+      "Tu sitio web personalizado con un asistente virtual inteligente integrado, similar a este chat. Precio desde $500 USD, incluye sitio web básico más integración de chat IA personalizado.",
+  },
+  {
     title: "E-commerce",
     description:
-      "Creamos tiendas en línea robustas y seguras para impulsar tus ventas en el mundo digital",
+      "Creamos tiendas en línea robustas y seguras. Precios desde $800 USD hasta $2,000 USD dependiendo de la complejidad y características requeridas.",
   },
   {
     title: "Mantenimiento y Soporte",
     description:
-      "Ofrecemos soporte continuo y mantenimiento para garantizar el funcionamiento óptimo de tus sistemas",
+      "Ofrecemos soporte continuo y mantenimiento para garantizar el funcionamiento óptimo de tus sistemas. Disponible en español e inglés.",
   },
 ];
 
