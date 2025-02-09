@@ -107,50 +107,126 @@ async function tryModel(message: string, conversationHistory: any[], modelConfig
   }
 }
 
+// Helper function to sanitize text
+const sanitizeText = (text: string): string => {
+  return text
+    .replace(/[^\p{L}\p{N}\s.,¿?¡!()]/gu, '')  // Only allow letters, numbers, spaces, and basic punctuation
+    .replace(/\s+/g, ' ')                       // Replace multiple spaces with single space
+    .trim();
+};
+
+// Helper function to clean text for display
+const cleanTextForDisplay = (text: string): string => {
+  const cleaned = text
+    .replace(/[^\p{L}\p{N}\s.,¿?¡!()[\]]/gu, '') // Allow markdown characters for links
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // If the text is empty after cleaning, return a friendly message
+  return cleaned || "Lo siento, no pude entender el mensaje. ¿Podrías reformularlo?";
+};
+
+// Helper function to generate navigation suggestions
+const generateNavigationSuggestion = (message: string): string => {
+  const lowercaseMsg = sanitizeText(message.toLowerCase());
+  let suggestion = '';
+
+  if (lowercaseMsg.includes('proyectos') || lowercaseMsg.includes('portafolio') || lowercaseMsg.includes('trabajos')) {
+    suggestion = 'Me encantaría mostrarte nuestro trabajo. 👉 [Aquí puedes ver todos nuestros proyectos](proyectos) 🎯';
+  }
+  
+  if (lowercaseMsg.includes('reunión') || lowercaseMsg.includes('cita') || lowercaseMsg.includes('videollamada') || lowercaseMsg.includes('llamada')) {
+    const meetingSuggestion = '¡Perfecto! Me alegra tu interés. 📅 [Aquí puedes agendar una llamada](llamada) 🤝';
+    suggestion = suggestion ? `${suggestion}\n\n${meetingSuggestion}` : meetingSuggestion;
+  }
+
+  return suggestion;
+};
+
+/**
+ * Represents a chat message in the conversation.
+ * @interface Message
+ * @property {string} content - The text content of the message
+ * @property {MessageRole} role - The role of the message sender (system, user, or assistant)
+ */
+interface Message {
+  content: string;
+  role: 'system' | 'user' | 'assistant';
+}
+
 export async function POST(req: Request) {
   try {
     if (!process.env.GROQ_API_KEY?.startsWith('gsk_')) {
-      console.error('Invalid or missing GROQ API key');
       return NextResponse.json(
-        { error: "Error de configuración: La clave API no es válida." },
+        { error: "API key no configurada correctamente" },
         { status: 500 }
       );
     }
 
-    const { message, conversationHistory = [] } = await req.json();
+    const body = await req.json();
     
-    if (!message) {
+    // Validate the messages array exists and has content
+    if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
       return NextResponse.json(
-        { error: "El mensaje no puede estar vacío." },
+        { error: "Formato de mensaje inválido" },
         { status: 400 }
       );
     }
 
-    // Try models in order of priority
-    for (const model of MODELS) {
-      try {
-        const response = await tryModel(message, conversationHistory, model);
-        return NextResponse.json({ 
-          response,
-          model: model.name 
-        });
-      } catch (error: any) {
-        console.log(`Retrying with next model due to error: ${error.message}`);
-        if (model === MODELS[MODELS.length - 1]) {
-          throw error;
-        }
-        continue;
-      }
+    // Clean and validate all messages in the conversation
+    const messages = body.messages.map((msg: Message) => ({
+      ...msg,
+      content: cleanTextForDisplay(msg.content)
+    }));
+
+    const lastMessage = messages[messages.length - 1]?.content;
+
+    if (!lastMessage) {
+      return NextResponse.json(
+        { error: "Mensaje vacío" },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json(
-      { error: "Lo siento, estoy experimentando dificultades técnicas. Por favor, intenta de nuevo en unos momentos." },
-      { status: 500 }
-    );
+    // Generate navigation suggestions if applicable
+    const navigationSuggestion = generateNavigationSuggestion(lastMessage);
+
+    // Build the prompt
+    const prompt = buildChatbotPrompt(lastMessage, messages);
+
+    // Get response from model
+    const completion = await groq.chat.completions.create({
+      messages: [
+        { role: "system", content: prompt },
+        ...messages,
+        ...(navigationSuggestion ? [{ 
+          role: "assistant", 
+          content: navigationSuggestion 
+        }] : [])
+      ],
+      model: MODELS[0].name,
+      temperature: 0.7,
+      max_tokens: Math.min(MODELS[0].maxTokens, 2048),
+    });
+
+    let response = completion.choices[0]?.message?.content || "Lo siento, no pude procesar tu solicitud.";
+
+    // Clean the response text while preserving markdown links
+    response = cleanTextForDisplay(response);
+
+    // If the model didn't use our navigation suggestion, we'll add it
+    if (navigationSuggestion && !response.includes(navigationSuggestion)) {
+      response = navigationSuggestion;
+    }
+
+    return NextResponse.json({ response });
   } catch (error: any) {
     console.error('Error in chat route:', error);
     return NextResponse.json(
-      { error: "Hubo un error procesando tu mensaje. Por favor, intenta de nuevo." },
+      { 
+        error: "Lo siento, ocurrió un error al procesar tu mensaje. Por favor, intenta de nuevo.", 
+        details: error.message 
+      },
       { status: 500 }
     );
   }

@@ -14,6 +14,11 @@ const formatForSpeech = (text: string): string => {
     .trim();
 };
 
+const navigationLinks = {
+  showcase: "/showcase",
+  meeting: "/meeting"
+};
+
 export const buildChatbotPrompt = (
   userQuery: string,
   conversationHistory: any[] = []
@@ -48,8 +53,18 @@ export const buildChatbotPrompt = (
           content.includes("app"),
         mentionedProcess:
           context.mentionedProcess ||
-          content.includes("proceso") ||
-          content.includes("pasos"),
+          content.includes("proceso"),
+        mentionedProjects:
+          context.mentionedProjects ||
+          content.includes("proyectos") ||
+          content.includes("portafolio") ||
+          content.includes("trabajos"),
+        mentionedMeeting:
+          context.mentionedMeeting ||
+          content.includes("reunión") ||
+          content.includes("cita") ||
+          content.includes("videollamada") ||
+          content.includes("llamada")
       };
     },
     {
@@ -57,48 +72,32 @@ export const buildChatbotPrompt = (
       mentionedWeb: false,
       mentionedMobile: false,
       mentionedProcess: false,
+      mentionedProjects: false,
+      mentionedMeeting: false
     }
   );
 
-  return `
-Eres un experto profesional de servicio al cliente de Capital Code. Analiza cada consulta y proporciona respuestas naturales basadas en nuestra información.
+  const basePrompt = `
+Eres un asistente virtual amigable y profesional de Capital Code. Tu objetivo es ayudar a los usuarios de manera clara y directa.
 
-DIRECTRICES:
-- Da respuestas concisas y relevantes
-- Evita mencionar que eres un bot o asistente
-- No uses fórmulas de saludo genéricas
-- Responde directamente a lo que se pregunta
-- Mantén un tono profesional pero cercano
-- Adapta las respuestas al contexto de la conversación
-- Si el usuario dice "no" o muestra desinterés, no insistas
-- Si el usuario dice algo como "en nada", responde brevemente y espera nueva interacción
-- Prioriza información basada en el historial de la conversación
+REGLAS DE RESPUESTA:
+- Sé conciso y directo
+- Usa un tono amigable pero profesional
+- Evita tecnicismos innecesarios
+- Cuando menciones enlaces, hazlo de forma natural
+- Ofrece ayuda adicional cuando sea relevante
 
-${
-  userContext.mentionedPricing
-    ? `
-CONTEXTO DE PRECIOS:
-- El usuario ha mostrado interés en precios
-- Enfócate en el valor y beneficios
-- Menciona las garantías relevantes
-`
-    : ""
-}
+CONTEXTO DE NAVEGACIÓN:
+- Cuando el usuario pregunte por proyectos, ofrece mostrarlos de forma natural
+- Cuando el usuario quiera una reunión, ofrece agendar una llamada de forma sencilla
+- Evita mencionar rutas técnicas como /showcase o /meeting
 
-${
-  userContext.mentionedWeb || userContext.mentionedMobile
-    ? `
-CONTEXTO DE DESARROLLO:
-- El usuario está interesado en ${
-        userContext.mentionedWeb ? "desarrollo web" : ""
-      }${userContext.mentionedWeb && userContext.mentionedMobile ? " y " : ""}${
-        userContext.mentionedMobile ? "desarrollo móvil" : ""
-      }
-- Enfatiza experiencia en estos servicios
-- Menciona casos de éxito relevantes
-`
-    : ""
-}
+EJEMPLOS DE RESPUESTAS NATURALES:
+❌ "Puedes ver nuestros proyectos en /showcase"
+✅ "Me encantaría mostrarte nuestro trabajo. [Aquí puedes ver todos nuestros proyectos](proyectos) 👈"
+
+❌ "Agenda una reunión en /meeting"
+✅ "¡Excelente! [Aquí puedes agendar una llamada](llamada) para discutir tu proyecto 📅"
 
 Información de Capital Code:
 
@@ -120,16 +119,9 @@ Contacto:
       .join("\n    ")}
 - Email: ${contactInfo.email}
 
-EJEMPLOS DE RESPUESTAS:
-
-❌ "Hola, soy el asistente virtual de Capital Code..."
-✅ "El desarrollo web incluye hosting, dominio y 4 páginas por 300 dólares"
-
-❌ "Te cuento que nuestros servicios son..."
-✅ "Para tu proyecto necesitas: Sistema base (800 dólares), integración de pagos y panel administrativo"
-
-❌ "Como asistente virtual, te explico..."
-✅ "Claro, podemos empezar con una llamada para discutir los detalles de tu app"
+Enlaces de navegación:
+- ${navigationLinks.showcase}: Ver nuestros proyectos
+- ${navigationLinks.meeting}: Agendar una reunión
 
 Historial de la conversación:
 ${conversationHistory.map((msg) => `${msg.role}: ${msg.content}`).join("\n")}
@@ -137,4 +129,6 @@ ${conversationHistory.map((msg) => `${msg.role}: ${msg.content}`).join("\n")}
 Consulta del Usuario:
 ${formatForSpeech(userQuery)}
 `;
+
+  return basePrompt;
 };

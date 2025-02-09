@@ -405,6 +405,15 @@ const splitIntoChunks = (text: string): string[] => {
   return chunks;
 };
 
+// Helper: Clean text for speech synthesis
+const cleanTextForSpeech = (text: string): string => {
+  return text
+    .replace(/[^\p{L}\p{N}\s.,¿?¡!()]/gu, '') // Remove special characters
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')   // Extract text from markdown links
+    .replace(/\s+/g, ' ')                      // Normalize spaces
+    .trim();
+};
+
 export const stopSpeaking = () => {
   if (typeof window !== "undefined" && window.speechSynthesis) {
     window.speechSynthesis.cancel();
@@ -428,6 +437,10 @@ export const speakMessage = async (
   }
 
   try {
+    // Clean the text before speaking
+    const cleanedText = cleanTextForSpeech(text);
+    if (!cleanedText) return;
+
     // Initialize speech synthesis if needed
     initializeSpeechSynthesis();
 
@@ -455,7 +468,7 @@ export const speakMessage = async (
     });
 
     // Split text into manageable chunks
-    const chunks = splitIntoChunks(text);
+    const chunks = splitIntoChunks(cleanedText);
 
     const speakChunk = (index: number) => {
       if (index >= chunks.length) {

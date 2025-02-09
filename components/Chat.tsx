@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from 'react-markdown';
 import {
   FaTimes,
   FaComment,
@@ -31,7 +32,7 @@ export default function Chat() {
   const quickQuestions = [
     "¿Qué servicios ofrecen?",
     "¿Cuáles son los precios?",
-    "¿Cuáles son los pasos del proceso?",
+    "Agenda una reunión",
     "¿Qué garantías tienen?",
     "¿Cómo contactar con soporte?",
   ];
@@ -57,28 +58,24 @@ export default function Chat() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMsg,
-          conversationHistory: messages.map((msg) => ({
+          messages: [...messages, newUserMessage].map((msg) => ({
             role: msg.type === "bot" ? "assistant" : "user",
             content: msg.content,
           })),
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        console.error("Server error details:", data.details);
-        throw new Error(data.error || "Error del servidor");
+        const errorData = await response.json();
+        console.error("Server error details:", errorData);
+        throw new Error(errorData.error || "Error del servidor");
       }
 
+      const data = await response.json();
       const botMessageContent = data.response;
+      
       if (!botMessageContent) {
         throw new Error("No se recibió respuesta del servidor");
-      }
-
-      if (data.model) {
-        console.log(`Response generated using model: ${data.model}`);
       }
 
       const botMsg: ChatMessage = { type: "bot", content: botMessageContent };
@@ -194,7 +191,35 @@ export default function Chat() {
                       : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none"
                   }`}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                  {message.type === "bot" ? (
+                    <ReactMarkdown 
+                      className="whitespace-pre-wrap prose dark:prose-invert max-w-none prose-sm"
+                      components={{
+                        a: ({ node, ...props }) => {
+                          const href = props.href === 'proyectos' ? '/showcase' : props.href === 'llamada' ? '/meeting' : props.href;
+                          return (
+                            <a 
+                              {...props} 
+                              className="text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                if (href) {
+                                  window.location.href = href;
+                                }
+                              }}
+                            />
+                          );
+                        },
+                        em: ({ node, ...props }) => (
+                          <span {...props} className="underline decoration-2" />
+                        )
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  )}
                 </div>
               </div>
             ))}
