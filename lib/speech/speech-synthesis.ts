@@ -67,64 +67,85 @@ const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
 const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | null> => {
   const voices = await initializeVoices();
   
-  // Spanish language variations to try
+  // Spanish language variations to try, prioritizing Spain Spanish
   const spanishVariants = [
-    "es-ES", // Spain
-    "es-MX", // Mexico
+    "es-ES", // Spain (prioritized)
     "es-US", // US Spanish
+    "es-MX", // Mexico
     "es"     // Generic Spanish
   ];
+
+  // Helper to check if it's the problematic male Mexican voice
+  const isMaleMexicanVoice = (v: SpeechSynthesisVoice) => 
+    v.lang === "es-MX" && 
+    (v.name.toLowerCase().includes("jorge") || 
+     v.name.toLowerCase().includes("juan") ||
+     v.name.toLowerCase().includes("male"));
 
   if (isIOS()) {
     // For iOS, try to find the best Spanish voice
     return (
-      // 1. Try to find Paulina (high quality Mexican Spanish voice)
+      // 1. Try to find Spanish (Spain) voice
       voices.find((v) => 
-        spanishVariants.includes(v.lang) && 
+        v.lang === "es-ES" && 
+        !isMaleMexicanVoice(v)
+      ) ||
+      // 2. Try to find Paulina
+      voices.find((v) => 
+        v.lang === "es-MX" && 
         v.name.includes("Paulina")
       ) ||
-      // 2. Try to find Monica (high quality Spanish voice)
+      // 3. Try any premium/enhanced Spanish voice (except male Mexican)
       voices.find((v) => 
         spanishVariants.includes(v.lang) && 
-        v.name.includes("Monica")
-      ) ||
-      // 3. Try any Spanish voice that's marked as premium/enhanced
-      voices.find((v) => 
-        spanishVariants.includes(v.lang) && 
+        !isMaleMexicanVoice(v) &&
         (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
       ) ||
-      // 4. Try any local Spanish voice
-      voices.find((v) => spanishVariants.includes(v.lang) && v.localService) ||
-      // 5. Any Spanish voice
-      voices.find((v) => spanishVariants.includes(v.lang)) ||
-      // 6. Fallback to any Spanish-like voice
-      voices.find((v) => v.lang.startsWith("es")) ||
+      // 4. Try any local Spanish voice (except male Mexican)
+      voices.find((v) => 
+        spanishVariants.includes(v.lang) && 
+        v.localService && 
+        !isMaleMexicanVoice(v)
+      ) ||
+      // 5. Any Spanish voice (except male Mexican)
+      voices.find((v) => 
+        spanishVariants.includes(v.lang) && 
+        !isMaleMexicanVoice(v)
+      ) ||
       null
     );
   }
 
   // For non-iOS devices
   return (
-    // 1. Try premium Spanish voices
+    // 1. Try Spanish (Spain) voices
     voices.find((v) => 
-      spanishVariants.includes(v.lang) && 
-      (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
-    ) ||
-    // 2. Try Google/Microsoft Spanish voices (prefer Paulina)
-    voices.find((v) => 
-      spanishVariants.includes(v.lang) && 
-      (v.name.includes("Google") || v.name.includes("Microsoft")) &&
-      v.name.includes("Paulina")
-    ) ||
-    // 3. Try any Google/Microsoft Spanish voice
-    voices.find((v) => 
-      spanishVariants.includes(v.lang) && 
+      v.lang === "es-ES" && 
+      !isMaleMexicanVoice(v) &&
       (v.name.includes("Google") || v.name.includes("Microsoft"))
     ) ||
-    // 4. Try any Spanish voice
-    voices.find((v) => spanishVariants.includes(v.lang)) ||
-    // 5. Fallback to any Spanish-like voice
-    voices.find((v) => v.lang.startsWith("es")) ||
+    // 2. Try Paulina specifically
+    voices.find((v) => 
+      v.lang === "es-MX" && 
+      v.name.includes("Paulina")
+    ) ||
+    // 3. Try premium Spanish voices (except male Mexican)
+    voices.find((v) => 
+      spanishVariants.includes(v.lang) && 
+      !isMaleMexicanVoice(v) &&
+      (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
+    ) ||
+    // 4. Try any Google/Microsoft Spanish voice (except male Mexican)
+    voices.find((v) => 
+      spanishVariants.includes(v.lang) && 
+      !isMaleMexicanVoice(v) &&
+      (v.name.includes("Google") || v.name.includes("Microsoft"))
+    ) ||
+    // 5. Any Spanish voice (except male Mexican)
+    voices.find((v) => 
+      spanishVariants.includes(v.lang) && 
+      !isMaleMexicanVoice(v)
+    ) ||
     null
   );
 };
@@ -213,6 +234,14 @@ export const speakMessage = async (
       return;
     }
 
+    // Log selected voice info for debugging
+    console.debug("Selected Spanish voice:", {
+      name: voice.name,
+      lang: voice.lang,
+      isLocal: voice.localService,
+      voiceURI: voice.voiceURI
+    });
+
     // Split text into manageable chunks
     const chunks = splitIntoChunks(text);
     
@@ -235,7 +264,7 @@ export const speakMessage = async (
         
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.95;    // Slightly slower for better clarity
+          utterance.rate = 1.1;    // Slightly slower for better clarity
           utterance.pitch = 1.1;    // Slightly higher pitch for better Spanish pronunciation
           utterance.volume = 1.0;   // Full volume
         } else {
