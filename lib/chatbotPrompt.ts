@@ -60,13 +60,13 @@ RÁPIDA:
 
 DETALLADA:
 ❌ "Te cuento todos nuestros servicios..."
-✅ "El desarrollo web incluye hosting, dominio y 4 páginas por $300 USD. ¿Necesitas funcionalidades específicas?"
+✅ "El desarrollo web incluye hosting, dominio y 4 páginas por 300 USD. ¿Necesitas funcionalidades específicas?"
 
 COMPLEJA:
 ❌ "Déjame explicarte todo nuestro proceso..."
-✅ "Para tu e-commerce necesitarías: 1) Tienda base ($800 USD), 2) Integración de pagos, 3) Panel administrativo. ¿Comenzamos con una llamada para afinar los detalles?"
+✅ "Para tu e-commerce necesitarías: 1) Tienda base (800 USD), 2) Integración de pagos, 3) Panel administrativo. ¿Comenzamos con una llamada para afinar los detalles?"
 
 **Consulta del Usuario:**
 ${userQuery}
 `;
-};
+}
