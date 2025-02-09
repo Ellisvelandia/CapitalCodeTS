@@ -88,22 +88,43 @@ const getVoice = async (
   // Spanish language variations to try, prioritizing Spain Spanish
   const spanishVariants = [
     "es-ES", // Spain (prioritized)
+    "es-MX", // Mexican Spanish
     "es-US", // US Spanish
-    "es", // Generic Spanish
+    "es"     // Generic Spanish
   ];
 
   // Helper to check if it's a male voice
   const isMaleVoice = (v: SpeechSynthesisVoice) =>
-    v.name.toLowerCase().includes("male");
+    v.name.toLowerCase().includes("male") ||
+    v.name.toLowerCase().includes("carlos") ||
+    v.name.toLowerCase().includes("juan") ||
+    v.name.toLowerCase().includes("diego");
 
   // Helper: Check if voice is likely to be high quality
   const isHighQualityVoice = (v: SpeechSynthesisVoice) => {
     const name = v.name.toLowerCase();
     return (
       name.includes('google') ||
+      name.includes('microsoft') ||
       name.includes('premium') ||
       name.includes('enhanced') ||
+      name.includes('neural') ||
+      (name.includes('paulina') && name.includes('mobile')) || // High quality Mexican voice
       (v.localService && !name.includes('compact'))
+    );
+  };
+
+  // Helper: Check if voice is natural-sounding
+  const isNaturalVoice = (v: SpeechSynthesisVoice) => {
+    const name = v.name.toLowerCase();
+    return (
+      name.includes('natural') ||
+      name.includes('neural') ||
+      name.includes('premium') ||
+      name.includes('enhanced') ||
+      name.includes('paulina') ||
+      name.includes('google') ||
+      name.includes('microsoft')
     );
   };
 
@@ -113,7 +134,9 @@ const getVoice = async (
       name: v.name,
       lang: v.lang,
       isLocal: v.localService,
-      isDefault: v.default
+      isDefault: v.default,
+      isHighQuality: isHighQualityVoice(v),
+      isNatural: isNaturalVoice(v)
     }))
   );
 
@@ -121,18 +144,19 @@ const getVoice = async (
   const isFirefox = typeof window !== "undefined" && navigator.userAgent.toLowerCase().includes('firefox');
 
   if (isFirefox) {
-    // For Firefox, prioritize Spanish voices
+    // For Firefox, prioritize high-quality Spanish voices
     const firefoxVoice = 
-      // 1. Try to find any Spanish (Spain) voice
+      // 1. Try to find high-quality Spanish voice
       voices.find((v) => 
-        v.lang === "es-ES" && 
+        spanishVariants.includes(v.lang) && 
         !isMaleVoice(v) &&
-        v.localService // Prefer local voices for better performance
+        isHighQualityVoice(v)
       ) ||
-      // 2. Try any Spanish voice from Spain
+      // 2. Try natural-sounding Spanish voice
       voices.find((v) => 
-        v.lang === "es-ES" && 
-        !isMaleVoice(v)
+        spanishVariants.includes(v.lang) && 
+        !isMaleVoice(v) &&
+        isNaturalVoice(v)
       ) ||
       // 3. Try any Spanish voice
       voices.find((v) => 
@@ -145,18 +169,35 @@ const getVoice = async (
 
   if (isIOS()) {
     // For iOS, try to find the best possible voice
-    const bestVoice = voices.find(
-      (v) =>
-        v.lang === "es-ES" &&
-        !isMaleVoice(v) &&
-        isHighQualityVoice(v)
-    );
+    const bestVoice = 
+      // 1. Try to find Paulina Mobile (high quality Mexican voice)
+      voices.find(
+        (v) =>
+          v.name.toLowerCase().includes('paulina') &&
+          v.name.toLowerCase().includes('mobile')
+      ) ||
+      // 2. Try other high-quality voices
+      voices.find(
+        (v) =>
+          spanishVariants.includes(v.lang) &&
+          !isMaleVoice(v) &&
+          isHighQualityVoice(v)
+      ) ||
+      // 3. Try natural-sounding voices
+      voices.find(
+        (v) =>
+          spanishVariants.includes(v.lang) &&
+          !isMaleVoice(v) &&
+          isNaturalVoice(v)
+      );
 
     if (bestVoice) {
-      console.debug('Selected high-quality iOS voice:', {
+      console.debug('Selected high-quality voice:', {
         name: bestVoice.name,
         lang: bestVoice.lang,
-        isLocal: bestVoice.localService
+        isLocal: bestVoice.localService,
+        isHighQuality: isHighQualityVoice(bestVoice),
+        isNatural: isNaturalVoice(bestVoice)
       });
       return bestVoice;
     }
@@ -169,10 +210,12 @@ const getVoice = async (
     ) || null;
 
     if (fallbackVoice) {
-      console.debug('Using fallback iOS voice:', {
+      console.debug('Using fallback voice:', {
         name: fallbackVoice.name,
         lang: fallbackVoice.lang,
-        isLocal: fallbackVoice.localService
+        isLocal: fallbackVoice.localService,
+        isHighQuality: isHighQualityVoice(fallbackVoice),
+        isNatural: isNaturalVoice(fallbackVoice)
       });
     }
 
@@ -181,28 +224,22 @@ const getVoice = async (
 
   // For non-iOS devices
   const foundVoice = 
-    // 1. Try Spanish (Spain) voices
-    voices.find(
-      (v) =>
-        v.lang === "es-ES" &&
-        !isMaleVoice(v) &&
-        (v.name.includes("Google") || v.name.includes("Microsoft"))
-    ) ||
-    // 2. Try premium Spanish voices
+    // 1. Try high-quality Spanish voices
     voices.find(
       (v) =>
         spanishVariants.includes(v.lang) &&
         !isMaleVoice(v) &&
-        (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
+        isHighQualityVoice(v) &&
+        (v.name.includes("Google") || v.name.includes("Microsoft"))
     ) ||
-    // 3. Try any Google/Microsoft Spanish voice
+    // 2. Try natural-sounding Spanish voices
     voices.find(
       (v) =>
         spanishVariants.includes(v.lang) &&
         !isMaleVoice(v) &&
-        (v.name.includes("Google") || v.name.includes("Microsoft"))
+        isNaturalVoice(v)
     ) ||
-    // 4. Any Spanish voice
+    // 3. Try any Spanish voice from our preferred variants
     voices.find(
       (v) => spanishVariants.includes(v.lang) && !isMaleVoice(v)
     );
