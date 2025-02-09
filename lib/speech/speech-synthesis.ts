@@ -78,15 +78,15 @@ const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | 
   if (isIOS()) {
     // For iOS, try to find the best Spanish voice
     return (
-      // 1. Try to find Paulina or Jorge (high quality Mexican Spanish voices)
+      // 1. Try to find Paulina (high quality Mexican Spanish voice)
       voices.find((v) => 
         spanishVariants.includes(v.lang) && 
-        (v.name.includes("Paulina") || v.name.includes("Jorge"))
+        v.name.includes("Paulina")
       ) ||
-      // 2. Try to find Monica or Juan (high quality Spanish voices)
+      // 2. Try to find Monica (high quality Spanish voice)
       voices.find((v) => 
         spanishVariants.includes(v.lang) && 
-        (v.name.includes("Monica") || v.name.includes("Juan"))
+        v.name.includes("Monica")
       ) ||
       // 3. Try any Spanish voice that's marked as premium/enhanced
       voices.find((v) => 
@@ -110,14 +110,20 @@ const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | 
       spanishVariants.includes(v.lang) && 
       (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
     ) ||
-    // 2. Try Google/Microsoft Spanish voices
+    // 2. Try Google/Microsoft Spanish voices (prefer Paulina)
+    voices.find((v) => 
+      spanishVariants.includes(v.lang) && 
+      (v.name.includes("Google") || v.name.includes("Microsoft")) &&
+      v.name.includes("Paulina")
+    ) ||
+    // 3. Try any Google/Microsoft Spanish voice
     voices.find((v) => 
       spanishVariants.includes(v.lang) && 
       (v.name.includes("Google") || v.name.includes("Microsoft"))
     ) ||
-    // 3. Try any Spanish voice
+    // 4. Try any Spanish voice
     voices.find((v) => spanishVariants.includes(v.lang)) ||
-    // 4. Fallback to any Spanish-like voice
+    // 5. Fallback to any Spanish-like voice
     voices.find((v) => v.lang.startsWith("es")) ||
     null
   );
