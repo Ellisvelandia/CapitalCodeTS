@@ -5,16 +5,23 @@ let hasInitialized = false;
 // Helper: Detect iOS device
 const isIOS = () => {
   if (typeof window === "undefined") return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+  );
 };
 
 // Helper: Initialize speech synthesis
 const initializeSpeechSynthesis = () => {
-  if (typeof window === "undefined" || !window.speechSynthesis || hasInitialized) return;
-  
+  if (
+    typeof window === "undefined" ||
+    !window.speechSynthesis ||
+    hasInitialized
+  )
+    return;
+
   // Force initialization of speech synthesis
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance('');
+  const utterance = new SpeechSynthesisUtterance("");
   window.speechSynthesis.speak(utterance);
   window.speechSynthesis.cancel();
   hasInitialized = true;
@@ -46,16 +53,25 @@ const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
       const voicesChangedHandler = () => {
         const updatedVoices = window.speechSynthesis.getVoices();
         if (updatedVoices.length > 0) {
-          window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler);
+          window.speechSynthesis.removeEventListener(
+            "voiceschanged",
+            voicesChangedHandler
+          );
           resolve(updatedVoices);
         }
       };
 
-      window.speechSynthesis.addEventListener('voiceschanged', voicesChangedHandler);
+      window.speechSynthesis.addEventListener(
+        "voiceschanged",
+        voicesChangedHandler
+      );
 
       // Fallback in case onvoiceschanged doesn't fire
       setTimeout(() => {
-        window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler);
+        window.speechSynthesis.removeEventListener(
+          "voiceschanged",
+          voicesChangedHandler
+        );
         const fallbackVoices = window.speechSynthesis.getVoices();
         resolve(fallbackVoices.length > 0 ? fallbackVoices : []);
       }, 1000);
@@ -64,53 +80,72 @@ const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
 };
 
 // Helper: Get the best available voice
-const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | null> => {
+const getVoice = async (
+  lang: string = "es-ES"
+): Promise<SpeechSynthesisVoice | null> => {
   const voices = await initializeVoices();
-  
+
   // Spanish language variations to try, prioritizing Spain Spanish
   const spanishVariants = [
     "es-ES", // Spain (prioritized)
     "es-US", // US Spanish
-    "es-MX", // Mexico
-    "es"     // Generic Spanish
+    "es", // Generic Spanish
   ];
 
-  // Helper to check if it's the problematic male Mexican voice
-  const isMaleMexicanVoice = (v: SpeechSynthesisVoice) => 
-    v.lang === "es-MX" && 
-    (v.name.toLowerCase().includes("jorge") || 
-     v.name.toLowerCase().includes("juan") ||
-     v.name.toLowerCase().includes("male"));
+  // Helper to check if it's a male voice
+  const isMaleVoice = (v: SpeechSynthesisVoice) =>
+    v.name.toLowerCase().includes("male");
 
-  if (isIOS()) {
-    // For iOS, try to find the best Spanish voice
+  // Check if we're in Firefox
+  const isFirefox = typeof window !== "undefined" && navigator.userAgent.toLowerCase().includes('firefox');
+
+  if (isFirefox) {
+    // For Firefox, prioritize Spanish voices
     return (
-      // 1. Try to find Spanish (Spain) voice
+      // 1. Try to find any Spanish (Spain) voice
       voices.find((v) => 
         v.lang === "es-ES" && 
-        !isMaleMexicanVoice(v)
+        !isMaleVoice(v) &&
+        v.localService // Prefer local voices for better performance
       ) ||
-      // 2. Try to find Paulina
+      // 2. Try any Spanish voice from Spain
       voices.find((v) => 
-        v.lang === "es-MX" && 
-        v.name.includes("Paulina")
+        v.lang === "es-ES" && 
+        !isMaleVoice(v)
       ) ||
-      // 3. Try any premium/enhanced Spanish voice (except male Mexican)
-      voices.find((v) => 
-        spanishVariants.includes(v.lang) && 
-        !isMaleMexicanVoice(v) &&
-        (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
-      ) ||
-      // 4. Try any local Spanish voice (except male Mexican)
+      // 3. Try any Spanish voice
       voices.find((v) => 
         spanishVariants.includes(v.lang) && 
-        v.localService && 
-        !isMaleMexicanVoice(v)
+        !isMaleVoice(v)
       ) ||
-      // 5. Any Spanish voice (except male Mexican)
+      null
+    );
+  }
+
+  if (isIOS()) {
+    // For iOS, try to find the best natural-sounding Spanish voice
+    return (
+      // 1. Try premium/enhanced Spanish voices first
+      voices.find(
+        (v) =>
+          spanishVariants.includes(v.lang) &&
+          !isMaleVoice(v) &&
+          (v.name.toLowerCase().includes("premium") ||
+           v.name.toLowerCase().includes("enhanced") ||
+           v.name.toLowerCase().includes("natural"))
+      ) ||
+      // 2. Try to find Spanish (Spain) voice with good quality
       voices.find((v) => 
-        spanishVariants.includes(v.lang) && 
-        !isMaleMexicanVoice(v)
+        v.lang === "es-ES" && 
+        !isMaleVoice(v) &&
+        !v.name.toLowerCase().includes("compact") // Avoid compact voices which might sound robotic
+      ) ||
+      // 3. Any Spanish voice that's not compact/basic
+      voices.find(
+        (v) =>
+          spanishVariants.includes(v.lang) &&
+          !isMaleVoice(v) &&
+          !v.name.toLowerCase().includes("compact")
       ) ||
       null
     );
@@ -119,32 +154,30 @@ const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | 
   // For non-iOS devices
   return (
     // 1. Try Spanish (Spain) voices
-    voices.find((v) => 
-      v.lang === "es-ES" && 
-      !isMaleMexicanVoice(v) &&
-      (v.name.includes("Google") || v.name.includes("Microsoft"))
+    voices.find(
+      (v) =>
+        v.lang === "es-ES" &&
+        !isMaleVoice(v) &&
+        (v.name.includes("Google") || v.name.includes("Microsoft"))
     ) ||
-    // 2. Try Paulina specifically
-    voices.find((v) => 
-      v.lang === "es-MX" && 
-      v.name.includes("Paulina")
+    // 2. Try premium Spanish voices
+    voices.find(
+      (v) =>
+        spanishVariants.includes(v.lang) &&
+        !isMaleVoice(v) &&
+        (v.name.toLowerCase().includes("premium") ||
+          v.name.toLowerCase().includes("enhanced"))
     ) ||
-    // 3. Try premium Spanish voices (except male Mexican)
-    voices.find((v) => 
-      spanishVariants.includes(v.lang) && 
-      !isMaleMexicanVoice(v) &&
-      (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
+    // 3. Try any Google/Microsoft Spanish voice
+    voices.find(
+      (v) =>
+        spanishVariants.includes(v.lang) &&
+        !isMaleVoice(v) &&
+        (v.name.includes("Google") || v.name.includes("Microsoft"))
     ) ||
-    // 4. Try any Google/Microsoft Spanish voice (except male Mexican)
-    voices.find((v) => 
-      spanishVariants.includes(v.lang) && 
-      !isMaleMexicanVoice(v) &&
-      (v.name.includes("Google") || v.name.includes("Microsoft"))
-    ) ||
-    // 5. Any Spanish voice (except male Mexican)
-    voices.find((v) => 
-      spanishVariants.includes(v.lang) && 
-      !isMaleMexicanVoice(v)
+    // 4. Any Spanish voice
+    voices.find(
+      (v) => spanishVariants.includes(v.lang) && !isMaleVoice(v)
     ) ||
     null
   );
@@ -154,34 +187,34 @@ const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | 
 const splitIntoChunks = (text: string): string[] => {
   // First split by sentences
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  
+
   // Then ensure each sentence is not too long (max 100 characters)
   const chunks: string[] = [];
-  sentences.forEach(sentence => {
+  sentences.forEach((sentence) => {
     const trimmed = sentence.trim();
     if (trimmed.length <= 100) {
       chunks.push(trimmed);
     } else {
       // Split long sentences by commas
       const parts = trimmed.split(/,(?=\s)/);
-      parts.forEach(part => {
+      parts.forEach((part) => {
         const trimmedPart = part.trim();
         if (trimmedPart.length <= 100) {
           chunks.push(trimmedPart);
         } else {
           // If still too long, split by spaces into ~50 char chunks
-          let words = trimmedPart.split(' ');
-          let currentChunk = '';
-          
-          words.forEach(word => {
-            if ((currentChunk + ' ' + word).length <= 50) {
-              currentChunk += (currentChunk ? ' ' : '') + word;
+          let words = trimmedPart.split(" ");
+          let currentChunk = "";
+
+          words.forEach((word) => {
+            if ((currentChunk + " " + word).length <= 50) {
+              currentChunk += (currentChunk ? " " : "") + word;
             } else {
               if (currentChunk) chunks.push(currentChunk);
               currentChunk = word;
             }
           });
-          
+
           if (currentChunk) {
             chunks.push(currentChunk);
           }
@@ -189,7 +222,7 @@ const splitIntoChunks = (text: string): string[] => {
       });
     }
   });
-  
+
   return chunks;
 };
 
@@ -239,12 +272,12 @@ export const speakMessage = async (
       name: voice.name,
       lang: voice.lang,
       isLocal: voice.localService,
-      voiceURI: voice.voiceURI
+      voiceURI: voice.voiceURI,
     });
 
     // Split text into manageable chunks
     const chunks = splitIntoChunks(text);
-    
+
     const speakChunk = (index: number) => {
       if (index >= chunks.length) {
         isSpeaking = false;
@@ -261,11 +294,11 @@ export const speakMessage = async (
         const utterance = new SpeechSynthesisUtterance(chunk);
         utterance.voice = voice;
         utterance.lang = lang;
-        
+
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.9;    // Slightly slower for better clarity
-          utterance.pitch = 1.0;    // Slightly higher pitch for better Spanish pronunciation
+          utterance.rate = 1.0;     // Normal speed for more natural sound
+          utterance.pitch = 1.0;    // Natural pitch
           utterance.volume = 1.0;   // Full volume
         } else {
           utterance.rate = 1.1;
@@ -279,9 +312,9 @@ export const speakMessage = async (
           } else if (window.speechSynthesis.paused) {
             window.speechSynthesis.resume();
           }
-          
+
           if (index < chunks.length - 1) {
-            const delay = isIOS() ? 300 : 400;  // Shorter delay for iOS
+            const delay = isIOS() ? 300 : 400; // Shorter delay for iOS
             setTimeout(() => speakChunk(index + 1), delay);
           } else {
             isSpeaking = false;
@@ -294,13 +327,13 @@ export const speakMessage = async (
             chunk: index,
             error: error.error,
             voice: voice.name,
-            lang: lang
+            lang: lang,
           });
-          
+
           if (isIOS()) {
             resetSpeechSynthesis();
           }
-          
+
           if (index < chunks.length - 1) {
             const delay = isIOS() ? 300 : 400;
             setTimeout(() => speakChunk(index + 1), delay);
@@ -316,7 +349,7 @@ export const speakMessage = async (
             name: voice.name,
             lang: voice.lang,
             isLocal: voice.localService,
-            voiceURI: voice.voiceURI
+            voiceURI: voice.voiceURI,
           });
         }
 
