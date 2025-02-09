@@ -264,8 +264,8 @@ export const speakMessage = async (
         
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.950;    // Slightly slower for better clarity
-          utterance.pitch = 1.1;    // Slightly higher pitch for better Spanish pronunciation
+          utterance.rate = 0.9;    // Slightly slower for better clarity
+          utterance.pitch = 1.0;    // Slightly higher pitch for better Spanish pronunciation
           utterance.volume = 1.0;   // Full volume
         } else {
           utterance.rate = 1.1;
