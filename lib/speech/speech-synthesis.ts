@@ -1,137 +1,193 @@
+// Keep track of speaking state
+let isSpeaking = false;
+
 export const stopSpeaking = () => {
   if (typeof window !== "undefined" && window.speechSynthesis) {
     window.speechSynthesis.cancel();
+    isSpeaking = false;
   }
 };
 
-export const speakMessage = (
+// Helper: Initialize voices and return a promise
+const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
+  return new Promise((resolve) => {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      resolve(voices);
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        resolve(window.speechSynthesis.getVoices());
+      };
+      // Fallback in case onvoiceschanged doesn't fire
+      setTimeout(() => {
+        const fallbackVoices = window.speechSynthesis.getVoices();
+        if (fallbackVoices.length > 0) {
+          resolve(fallbackVoices);
+        } else {
+          resolve([]);
+        }
+      }, 1000);
+    }
+  });
+};
+
+// Helper: Get the best available voice
+const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | null> => {
+  const voices = await initializeVoices();
+  return (
+    voices.find((v) => v.lang === lang && v.name.includes("Google")) ||
+    voices.find((v) => v.lang === lang) ||
+    voices.find((v) => v.lang.startsWith(lang.split("-")[0])) ||
+    voices[0] ||
+    null
+  );
+};
+
+// Helper: Split text into smaller chunks
+const splitIntoChunks = (text: string): string[] => {
+  // First split by sentences
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+  
+  // Then ensure each sentence is not too long (max 100 characters)
+  const chunks: string[] = [];
+  sentences.forEach(sentence => {
+    const trimmed = sentence.trim();
+    if (trimmed.length <= 100) {
+      chunks.push(trimmed);
+    } else {
+      // Split long sentences by commas
+      const parts = trimmed.split(/,(?=\s)/);
+      parts.forEach(part => {
+        const trimmedPart = part.trim();
+        if (trimmedPart.length <= 100) {
+          chunks.push(trimmedPart);
+        } else {
+          // If still too long, split by spaces into ~50 char chunks
+          let words = trimmedPart.split(' ');
+          let currentChunk = '';
+          
+          words.forEach(word => {
+            if ((currentChunk + ' ' + word).length <= 50) {
+              currentChunk += (currentChunk ? ' ' : '') + word;
+            } else {
+              if (currentChunk) chunks.push(currentChunk);
+              currentChunk = word;
+            }
+          });
+          
+          if (currentChunk) {
+            chunks.push(currentChunk);
+          }
+        }
+      });
+    }
+  });
+  
+  return chunks;
+};
+
+export const speakMessage = async (
   text: string,
   isMuted: boolean = false,
   lang: string = "es-ES"
 ) => {
-  if (typeof window === "undefined" || !window.speechSynthesis) {
+  if (
+    typeof window === "undefined" ||
+    !window.speechSynthesis ||
+    isMuted ||
+    isSpeaking ||
+    !text
+  ) {
     return;
   }
 
-  // Always cancel any ongoing speech first
-  stopSpeaking();
+  try {
+    // Cancel any ongoing speech
+    stopSpeaking();
 
-  // If muted, don't start new speech
-  if (isMuted) {
-    return;
-  }
+    // Get voice first to ensure it's available
+    const voice = await getVoice(lang);
+    if (!voice) {
+      console.warn("No voice available for language:", lang);
+      return;
+    }
 
-  // Wait a brief moment before starting new speech
-  setTimeout(() => {
-    // Helper: find a matching voice for the given language.
-    const getVoice = (): SpeechSynthesisVoice | null => {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices || voices.length === 0) return null;
-      return (
-        voices.find((v) => v.lang === lang && v.name.includes("Google")) || // Google voice
-        voices.find((v) => v.lang === lang) || // Any voice with the exact language match
-        voices.find((v) => v.lang.startsWith("es")) || // Any Spanish variant
-        voices[0] // Fallback to the first available voice
-      );
-    };
-
-    // Split the text into sentences to allow natural pauses.
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    let currentIndex = 0;
-    let retryCount = 0;
-    const MAX_RETRIES = 3;
-
-    const speakNextSentence = () => {
-      if (currentIndex >= sentences.length) return; // Finished all sentences
-
-      const voice = getVoice();
-      if (!voice) {
-        console.warn("No voice available - waiting for voices to load");
-        if (retryCount < MAX_RETRIES) {
-          retryCount++;
-          setTimeout(speakNextSentence, 1000);
-        }
+    // Split text into manageable chunks
+    const chunks = splitIntoChunks(text);
+    
+    const speakChunk = (index: number) => {
+      if (index >= chunks.length) {
+        isSpeaking = false;
         return;
       }
 
-      const sentence = sentences[currentIndex].trim();
-      if (!sentence) {
-        console.warn("Empty sentence encountered, skipping...");
-        currentIndex++;
-        speakNextSentence();
+      const chunk = chunks[index];
+      if (!chunk) {
+        speakChunk(index + 1);
         return;
       }
 
       try {
-        const utterance = new SpeechSynthesisUtterance(sentence);
+        const utterance = new SpeechSynthesisUtterance(chunk);
         utterance.voice = voice;
         utterance.lang = lang;
-        utterance.rate = 1.1; // Slightly slower rate
+        utterance.rate = 1.1;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
 
-        // Reset retry count when speech starts successfully
-        utterance.onstart = () => {
-          retryCount = 0;
-        };
-
-        // Proceed to the next sentence when this one ends
         utterance.onend = () => {
-          currentIndex++;
-          if (currentIndex < sentences.length) {
-            setTimeout(() => speakNextSentence(), 250); // Slight pause between sentences
+          // Ensure speech synthesis is not paused
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+          
+          if (index < chunks.length - 1) {
+            // Add slightly longer pause between chunks
+            setTimeout(() => speakChunk(index + 1), 400);
+          } else {
+            isSpeaking = false;
           }
         };
 
-        // Handle errors during speech
-        utterance.onerror = (event: any) => {
-          // If the error is "interrupted", then we know this utterance was cancelled intentionally.
-          if (event.error && event.error.toLowerCase() === "interrupted") {
-            console.warn(
-              "Speech synthesis was intentionally interrupted:",
-              event
-            );
-            currentIndex++;
-            speakNextSentence();
-            return;
+        utterance.onerror = (event) => {
+          // Only log error if it's not a normal interruption
+          const error = event as SpeechSynthesisErrorEvent;
+          if (error.error !== 'interrupted' && error.error !== 'canceled') {
+            console.debug("Speech chunk completed with non-critical error:", {
+              chunk: index,
+              error: error.error
+            });
           }
-          // Log other errors and apply retry logic if needed
-          console.error("Speech synthesis error:", event);
-          if (retryCount < MAX_RETRIES) {
-            retryCount++;
-            console.log(`Retrying speech synthesis (attempt ${retryCount})`);
-            setTimeout(() => {
-              speakNextSentence();
-            }, 1000);
+          
+          // Continue with next chunk regardless of error
+          if (index < chunks.length - 1) {
+            setTimeout(() => speakChunk(index + 1), 400);
           } else {
-            currentIndex++;
-            retryCount = 0;
-            speakNextSentence();
+            isSpeaking = false;
           }
         };
+
+        // Resume synthesis if it was paused
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
 
         window.speechSynthesis.speak(utterance);
       } catch (error) {
-        console.error("Error creating utterance:", error);
-        currentIndex++;
-        speakNextSentence();
+        console.error("Error creating utterance for chunk", index, ":", error);
+        if (index < chunks.length - 1) {
+          setTimeout(() => speakChunk(index + 1), 400);
+        } else {
+          isSpeaking = false;
+        }
       }
     };
 
-    // Wait for voices to load if not available immediately.
-    if (window.speechSynthesis.getVoices().length === 0) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        speakNextSentence();
-      };
-      // Fallback if onvoiceschanged doesn't fire
-      setTimeout(speakNextSentence, 1000);
-    } else {
-      speakNextSentence();
-    }
-  }, 100); // Short delay after canceling prior speech
+    isSpeaking = true;
+    speakChunk(0);
 
-  // Return a cleanup function in case you need to cancel later.
-  return () => {
-    stopSpeaking();
-  };
+  } catch (error) {
+    console.error("Error in speech synthesis:", error);
+    isSpeaking = false;
+  }
 };

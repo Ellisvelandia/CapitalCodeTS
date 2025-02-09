@@ -43,6 +43,9 @@ export default function Chat() {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
 
+    // Stop any ongoing speech before sending new message
+    stopSpeaking();
+
     const userMsg = inputMessage.trim();
     setInputMessage("");
     const newUserMessage: ChatMessage = { type: "user", content: userMsg };
@@ -76,16 +79,19 @@ export default function Chat() {
       const botMsg: ChatMessage = { type: "bot", content: botMessageContent };
       setMessages((prev) => [...prev, botMsg]);
 
-      // Trigger speech synthesis if not muted.
+      // Add a small delay before starting speech
       if (!isMuted) {
         try {
-          speakMessage(botMessageContent, isMuted);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          await speakMessage(botMessageContent, isMuted);
         } catch (error) {
           console.error("Failed to initialize speech:", error);
         }
       }
+
     } catch (error: any) {
       console.error("Chat error:", error);
+      stopSpeaking();
       const errorMsg: ChatMessage = {
         type: "bot",
         content: `⚠️ ${

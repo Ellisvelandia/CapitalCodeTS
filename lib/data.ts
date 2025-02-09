@@ -29,7 +29,7 @@ export const services = [
   {
     title: "E-commerce",
     description:
-      "Creamos tiendas en línea robustas y seguras. Precios desde $800 USD hasta $2,000 USD dependiendo de la complejidad y características requeridas.",
+      "Creamos tiendas en línea robustas y seguras. Precios desde $800 USD hasta $2000 USD dependiendo de la complejidad y características requeridas.",
   },
   {
     title: "Mantenimiento y Soporte",
