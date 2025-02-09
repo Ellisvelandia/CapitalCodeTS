@@ -67,46 +67,58 @@ const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
 const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | null> => {
   const voices = await initializeVoices();
   
+  // Spanish language variations to try
+  const spanishVariants = [
+    "es-ES", // Spain
+    "es-MX", // Mexico
+    "es-US", // US Spanish
+    "es"     // Generic Spanish
+  ];
+
   if (isIOS()) {
-    // On iOS, prefer local voices as they are more reliable
+    // For iOS, try to find the best Spanish voice
     return (
-      // First try to find a local voice in the exact language
-      voices.find((v) => v.lang === lang && v.localService) ||
-      // Then try any voice in the exact language
-      voices.find((v) => v.lang === lang) ||
-      // Then try local voice in base language
-      voices.find((v) => v.lang.startsWith(lang.split("-")[0]) && v.localService) ||
-      // Then any voice in base language
-      voices.find((v) => v.lang.startsWith(lang.split("-")[0])) ||
-      // Finally, just get any available voice
-      voices[0] ||
+      // 1. Try to find Paulina or Jorge (high quality Mexican Spanish voices)
+      voices.find((v) => 
+        spanishVariants.includes(v.lang) && 
+        (v.name.includes("Paulina") || v.name.includes("Jorge"))
+      ) ||
+      // 2. Try to find Monica or Juan (high quality Spanish voices)
+      voices.find((v) => 
+        spanishVariants.includes(v.lang) && 
+        (v.name.includes("Monica") || v.name.includes("Juan"))
+      ) ||
+      // 3. Try any Spanish voice that's marked as premium/enhanced
+      voices.find((v) => 
+        spanishVariants.includes(v.lang) && 
+        (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
+      ) ||
+      // 4. Try any local Spanish voice
+      voices.find((v) => spanishVariants.includes(v.lang) && v.localService) ||
+      // 5. Any Spanish voice
+      voices.find((v) => spanishVariants.includes(v.lang)) ||
+      // 6. Fallback to any Spanish-like voice
+      voices.find((v) => v.lang.startsWith("es")) ||
       null
     );
   }
 
-  // For non-iOS devices, keep the existing logic
-  const preferredProviders = ["Google", "Microsoft", "Natural"];
-  
+  // For non-iOS devices
   return (
+    // 1. Try premium Spanish voices
     voices.find((v) => 
-      v.lang === lang && 
-      (v.name.toLowerCase().includes("premium") || 
-       v.name.toLowerCase().includes("enhanced") ||
-       preferredProviders.some(provider => v.name.includes(provider)))
+      spanishVariants.includes(v.lang) && 
+      (v.name.toLowerCase().includes("premium") || v.name.toLowerCase().includes("enhanced"))
     ) ||
+    // 2. Try Google/Microsoft Spanish voices
     voices.find((v) => 
-      v.lang === lang && 
-      preferredProviders.some(provider => v.name.includes(provider))
+      spanishVariants.includes(v.lang) && 
+      (v.name.includes("Google") || v.name.includes("Microsoft"))
     ) ||
-    voices.find((v) => v.lang === lang) ||
-    voices.find((v) => 
-      v.lang.startsWith(lang.split("-")[0]) && 
-      (v.name.toLowerCase().includes("premium") || 
-       v.name.toLowerCase().includes("enhanced") ||
-       preferredProviders.some(provider => v.name.includes(provider)))
-    ) ||
-    voices.find((v) => v.lang.startsWith(lang.split("-")[0])) ||
-    voices[0] ||
+    // 3. Try any Spanish voice
+    voices.find((v) => spanishVariants.includes(v.lang)) ||
+    // 4. Fallback to any Spanish-like voice
+    voices.find((v) => v.lang.startsWith("es")) ||
     null
   );
 };
@@ -217,9 +229,9 @@ export const speakMessage = async (
         
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;  // Set to full volume for iOS
+          utterance.rate = 0.95;    // Slightly slower for better clarity
+          utterance.pitch = 1.1;    // Slightly higher pitch for better Spanish pronunciation
+          utterance.volume = 1.0;   // Full volume
         } else {
           utterance.rate = 1.1;
           utterance.pitch = 1.0;
@@ -265,10 +277,11 @@ export const speakMessage = async (
         // iOS requires a user gesture to start speech
         // We'll try to speak anyway, but warn in console
         if (isIOS()) {
-          console.debug("Speaking on iOS:", {
-            voiceName: voice.name,
-            voiceLang: voice.lang,
-            isLocal: voice.localService
+          console.debug("Selected Spanish voice:", {
+            name: voice.name,
+            lang: voice.lang,
+            isLocal: voice.localService,
+            voiceURI: voice.voiceURI
           });
         }
 
