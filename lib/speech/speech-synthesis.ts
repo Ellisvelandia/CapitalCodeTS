@@ -94,17 +94,34 @@ const getVoice = async (
   ];
 
   // Helper to check if it's a male voice
-  const isMaleVoice = (v: SpeechSynthesisVoice) =>
-    v.name.toLowerCase().includes("male") ||
-    v.name.toLowerCase().includes("carlos") ||
-    v.name.toLowerCase().includes("juan") ||
-    v.name.toLowerCase().includes("diego");
+  const isMaleVoice = (v: SpeechSynthesisVoice) => {
+    const name = v.name.toLowerCase();
+    return (
+      name.includes("male") ||
+      name.includes("carlos") ||
+      name.includes("juan") ||
+      name.includes("diego") ||
+      // Specific check for Mexican male Google voice
+      (name.includes("google") && 
+       name.includes("es-mx") && 
+       (name.includes("man") || name.includes("male")))
+    );
+  };
 
   // Helper: Check if voice is likely to be high quality
   const isHighQualityVoice = (v: SpeechSynthesisVoice) => {
     const name = v.name.toLowerCase();
+    const lang = v.lang.toLowerCase();
+    
+    // Avoid Mexican male Google voice
+    if (name.includes('google') && 
+        lang === 'es-mx' && 
+        (name.includes('man') || name.includes('male'))) {
+      return false;
+    }
+
     return (
-      name.includes('google') ||
+      (name.includes('google') && lang === 'es-es') || // Prefer Spanish (Spain) Google voice
       name.includes('microsoft') ||
       name.includes('premium') ||
       name.includes('enhanced') ||
