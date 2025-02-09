@@ -111,17 +111,8 @@ const getVoice = async (
   // Helper: Check if voice is likely to be high quality
   const isHighQualityVoice = (v: SpeechSynthesisVoice) => {
     const name = v.name.toLowerCase();
-    const lang = v.lang.toLowerCase();
-    
-    // Avoid Mexican male Google voice
-    if (name.includes('google') && 
-        lang === 'es-mx' && 
-        (name.includes('man') || name.includes('male'))) {
-      return false;
-    }
-
     return (
-      (name.includes('google') && lang === 'es-es') || // Prefer Spanish (Spain) Google voice
+      (name.includes('google') && v.lang === 'es-ES') || // Prioritize Google Spanish (Spain)
       name.includes('microsoft') ||
       name.includes('premium') ||
       name.includes('enhanced') ||
@@ -145,6 +136,13 @@ const getVoice = async (
     );
   };
 
+  // Helper: Check if it's Chrome browser
+  const isChrome = () => {
+    return typeof window !== "undefined" && 
+           navigator.userAgent.toLowerCase().includes('chrome') &&
+           !navigator.userAgent.toLowerCase().includes('edge');
+  };
+
   // Log available voices for debugging
   console.debug('Available Spanish voices:', voices.filter(v => 
     v.lang.startsWith('es')).map(v => ({
@@ -156,6 +154,25 @@ const getVoice = async (
       isNatural: isNaturalVoice(v)
     }))
   );
+
+  // For Chrome, prioritize Google Spanish (Spain) voice
+  if (isChrome()) {
+    const googleSpainVoice = voices.find(
+      (v) =>
+        v.name.toLowerCase().includes('google') &&
+        v.lang === 'es-ES' &&
+        !isMaleVoice(v)
+    );
+
+    if (googleSpainVoice) {
+      console.debug('Selected Google Spanish (Spain) voice:', {
+        name: googleSpainVoice.name,
+        lang: googleSpainVoice.lang,
+        isLocal: googleSpainVoice.localService
+      });
+      return googleSpainVoice;
+    }
+  }
 
   // Check if we're in Firefox
   const isFirefox = typeof window !== "undefined" && navigator.userAgent.toLowerCase().includes('firefox');
