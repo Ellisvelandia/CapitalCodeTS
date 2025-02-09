@@ -68,12 +68,18 @@ export default function Chat() {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("Server error details:", data.details);
         throw new Error(data.error || "Error del servidor");
       }
 
       const botMessageContent = data.response;
       if (!botMessageContent) {
         throw new Error("No se recibió respuesta del servidor");
+      }
+
+      // Log which model was used (if provided)
+      if (data.model) {
+        console.log(`Response generated using model: ${data.model}`);
       }
 
       const botMsg: ChatMessage = { type: "bot", content: botMessageContent };
@@ -85,21 +91,18 @@ export default function Chat() {
           await new Promise((resolve) => setTimeout(resolve, 100));
           await speakMessage(botMessageContent, isMuted);
         } catch (error) {
-          console.error("Failed to initialize speech:", error);
+          console.error("Error speaking message:", error);
+          // Don't throw here - we still want to show the message even if speech fails
         }
       }
-
     } catch (error: any) {
       console.error("Chat error:", error);
-      stopSpeaking();
-      const errorMsg: ChatMessage = {
-        type: "bot",
-        content: `⚠️ ${
-          error.message ||
-          "Error al procesar tu solicitud. Por favor, intenta de nuevo más tarde."
-        }`,
+      const errorMsg = error.message || "Ocurrió un error inesperado";
+      const botMsg: ChatMessage = { 
+        type: "bot", 
+        content: `Lo siento, ${errorMsg.toLowerCase()}. Por favor, intenta nuevamente en unos momentos.` 
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [...prev, botMsg]);
     } finally {
       setIsLoading(false);
     }
