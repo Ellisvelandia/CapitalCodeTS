@@ -16,6 +16,7 @@ import { speakMessage, stopSpeaking } from "@/lib/speech/speech-synthesis";
 interface ChatMessage {
   type: "user" | "bot";
   content: string;
+  language?: string;
 }
 
 export default function Chat() {
@@ -72,23 +73,29 @@ export default function Chat() {
       }
 
       const data = await response.json();
-      const botMessageContent = data.response;
       
-      if (!botMessageContent) {
+      if (!data.content) {
         throw new Error("No se recibió respuesta del servidor");
       }
 
-      const botMsg: ChatMessage = { type: "bot", content: botMessageContent };
-      setMessages((prev) => [...prev, botMsg]);
-
-      if (!isMuted) {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          await speakMessage(botMessageContent, isMuted);
-        } catch (error) {
-          console.error("Error speaking message:", error);
+      const handleBotResponse = async (response: any) => {
+        if (response?.content) {
+          const newMessage: ChatMessage = {
+            type: "bot",
+            content: response.content,
+            language: response.language || "es-ES"
+          };
+          setMessages(prev => [...prev, newMessage]);
+          
+          // Speak the message with the correct language
+          if (!isMuted) {
+            await speakMessage(response.content, false, newMessage.language);
+          }
         }
-      }
+      };
+
+      await handleBotResponse(data);
+
     } catch (error: any) {
       console.error("Chat error:", error);
       const errorMsg = error.message || "Ocurrió un error inesperado";

@@ -143,15 +143,27 @@ const generateNavigationSuggestion = (message: string): string => {
   return suggestion;
 };
 
+// Helper function to detect language
+const detectLanguage = (text: string): string => {
+  // Simple language detection based on common Spanish words
+  const spanishWords = ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'porque', 'qué', 'cómo', 'cuándo', 'dónde'];
+  const words = text.toLowerCase().split(/\s+/);
+  const spanishWordCount = words.filter(word => spanishWords.includes(word)).length;
+  
+  return spanishWordCount > 0 ? 'es-ES' : 'en-US';
+};
+
 /**
  * Represents a chat message in the conversation.
  * @interface Message
  * @property {string} content - The text content of the message
  * @property {MessageRole} role - The role of the message sender (system, user, or assistant)
+ * @property {string} language - The language of the message
  */
 interface Message {
   content: string;
   role: 'system' | 'user' | 'assistant';
+  language?: string;
 }
 
 export async function POST(req: Request) {
@@ -219,7 +231,12 @@ export async function POST(req: Request) {
       response = navigationSuggestion;
     }
 
-    return NextResponse.json({ response });
+    const language = detectLanguage(response);
+
+    return NextResponse.json({
+      content: response,
+      language: language
+    });
   } catch (error: any) {
     console.error('Error in chat route:', error);
     return NextResponse.json(
