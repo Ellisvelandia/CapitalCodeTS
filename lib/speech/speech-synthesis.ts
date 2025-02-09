@@ -123,24 +123,24 @@ const getVoice = async (
   }
 
   if (isIOS()) {
-    // For iOS, try to find the best natural-sounding Spanish voice
+    // For iOS, prioritize high-quality voices
     return (
-      // 1. Try premium/enhanced Spanish voices first
+      // 1. Try to find Samantha or premium voices (known good quality)
       voices.find(
         (v) =>
           spanishVariants.includes(v.lang) &&
           !isMaleVoice(v) &&
-          (v.name.toLowerCase().includes("premium") ||
-           v.name.toLowerCase().includes("enhanced") ||
-           v.name.toLowerCase().includes("natural"))
+          (v.name.includes("Samantha") || 
+           v.name.toLowerCase().includes("premium"))
       ) ||
-      // 2. Try to find Spanish (Spain) voice with good quality
+      // 2. Try to find high-quality Spanish (Spain) voice
       voices.find((v) => 
         v.lang === "es-ES" && 
         !isMaleVoice(v) &&
-        !v.name.toLowerCase().includes("compact") // Avoid compact voices which might sound robotic
+        (v.name.toLowerCase().includes("natural") ||
+         v.name.toLowerCase().includes("enhanced"))
       ) ||
-      // 3. Any Spanish voice that's not compact/basic
+      // 3. Any non-compact Spanish voice as fallback
       voices.find(
         (v) =>
           spanishVariants.includes(v.lang) &&
@@ -297,8 +297,8 @@ export const speakMessage = async (
 
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 1.0;     // Normal speed for more natural sound
-          utterance.pitch = 1.0;    // Natural pitch
+          utterance.rate = 0.95;    // Slightly slower for clarity but still natural
+          utterance.pitch = 1.1;    // Slightly higher pitch for better clarity
           utterance.volume = 1.0;   // Full volume
         } else {
           utterance.rate = 1.1;
