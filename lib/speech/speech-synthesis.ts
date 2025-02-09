@@ -123,32 +123,26 @@ const getVoice = async (
   }
 
   if (isIOS()) {
-    // For iOS, prioritize high-quality voices
-    return (
-      // 1. Try to find Samantha or premium voices (known good quality)
-      voices.find(
-        (v) =>
-          spanishVariants.includes(v.lang) &&
-          !isMaleVoice(v) &&
-          (v.name.includes("Samantha") || 
-           v.name.toLowerCase().includes("premium"))
-      ) ||
-      // 2. Try to find high-quality Spanish (Spain) voice
-      voices.find((v) => 
-        v.lang === "es-ES" && 
+    // For iOS, prioritize high-quality female voices
+    const femaleVoice = voices.find(
+      (v) =>
+        v.lang === "es-ES" &&
         !isMaleVoice(v) &&
-        (v.name.toLowerCase().includes("natural") ||
-         v.name.toLowerCase().includes("enhanced"))
-      ) ||
-      // 3. Any non-compact Spanish voice as fallback
-      voices.find(
-        (v) =>
-          spanishVariants.includes(v.lang) &&
-          !isMaleVoice(v) &&
-          !v.name.toLowerCase().includes("compact")
-      ) ||
-      null
+        v.localService &&  // Prefer local voices for better quality
+        !v.name.toLowerCase().includes("compact")
     );
+
+    // If we found a good female voice, use it
+    if (femaleVoice) {
+      return femaleVoice;
+    }
+
+    // Fallback to any Spanish female voice
+    return voices.find(
+      (v) =>
+        spanishVariants.includes(v.lang) &&
+        !isMaleVoice(v)
+    ) || null;
   }
 
   // For non-iOS devices
@@ -297,9 +291,9 @@ export const speakMessage = async (
 
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.95;    // Slightly slower for clarity but still natural
-          utterance.pitch = 1.1;    // Slightly higher pitch for better clarity
-          utterance.volume = 1.0;   // Full volume
+          utterance.rate = 0.98;     // Very close to natural speed
+          utterance.pitch = 1.0;     // Keep natural pitch
+          utterance.volume = 0.95;   // Slightly reduced volume for clarity
         } else {
           utterance.rate = 1.1;
           utterance.pitch = 1.0;
