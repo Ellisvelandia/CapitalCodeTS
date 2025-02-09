@@ -8,6 +8,20 @@ export const stopSpeaking = () => {
   }
 };
 
+// Helper: Detect iOS device
+const isIOS = () => {
+  if (typeof window === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+};
+
+// Helper: Reset and resume speech synthesis (iOS workaround)
+const resetSpeechSynthesis = () => {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.resume();
+};
+
 // Helper: Initialize voices and return a promise
 const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
   return new Promise((resolve) => {
@@ -131,6 +145,11 @@ export const speakMessage = async (
     // Cancel any ongoing speech
     stopSpeaking();
 
+    // Reset speech synthesis for iOS
+    if (isIOS()) {
+      resetSpeechSynthesis();
+    }
+
     // Get voice first to ensure it's available
     const voice = await getVoice(lang);
     if (!voice) {
@@ -139,6 +158,7 @@ export const speakMessage = async (
     }
 
     // Split text into manageable chunks
+    // Use smaller chunks for iOS to prevent cutting off
     const chunks = splitIntoChunks(text);
     
     const speakChunk = (index: number) => {
@@ -157,37 +177,54 @@ export const speakMessage = async (
         const utterance = new SpeechSynthesisUtterance(chunk);
         utterance.voice = voice;
         utterance.lang = lang;
-        utterance.rate = 1.1;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
+        
+        // Adjust parameters for iOS
+        if (isIOS()) {
+          utterance.rate = 0.9;  // Slightly slower on iOS
+          utterance.pitch = 1.0;
+          utterance.volume = 0.9;
+        } else {
+          utterance.rate = 1.1;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
+        }
 
         utterance.onend = () => {
+          // iOS specific handling
+          if (isIOS()) {
+            resetSpeechSynthesis();
+          }
           // Ensure speech synthesis is not paused
-          if (window.speechSynthesis.paused) {
+          else if (window.speechSynthesis.paused) {
             window.speechSynthesis.resume();
           }
           
           if (index < chunks.length - 1) {
-            // Add slightly longer pause between chunks
-            setTimeout(() => speakChunk(index + 1), 400);
+            // Longer pause between chunks on iOS
+            const delay = isIOS() ? 600 : 400;
+            setTimeout(() => speakChunk(index + 1), delay);
           } else {
             isSpeaking = false;
           }
         };
 
         utterance.onerror = (event) => {
-          // Only log error if it's not a normal interruption
           const error = event as SpeechSynthesisErrorEvent;
           if (error.error !== 'interrupted' && error.error !== 'canceled') {
             console.debug("Speech chunk completed with non-critical error:", {
               chunk: index,
               error: error.error
             });
+            
+            // Try to recover on iOS
+            if (isIOS()) {
+              resetSpeechSynthesis();
+            }
           }
           
-          // Continue with next chunk regardless of error
           if (index < chunks.length - 1) {
-            setTimeout(() => speakChunk(index + 1), 400);
+            const delay = isIOS() ? 600 : 400;
+            setTimeout(() => speakChunk(index + 1), delay);
           } else {
             isSpeaking = false;
           }
@@ -198,11 +235,17 @@ export const speakMessage = async (
           window.speechSynthesis.resume();
         }
 
+        // Additional iOS check before speaking
+        if (isIOS()) {
+          resetSpeechSynthesis();
+        }
+
         window.speechSynthesis.speak(utterance);
       } catch (error) {
         console.error("Error creating utterance for chunk", index, ":", error);
         if (index < chunks.length - 1) {
-          setTimeout(() => speakChunk(index + 1), 400);
+          const delay = isIOS() ? 600 : 400;
+          setTimeout(() => speakChunk(index + 1), delay);
         } else {
           isSpeaking = false;
         }
