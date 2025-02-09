@@ -1,12 +1,6 @@
 // Keep track of speaking state
 let isSpeaking = false;
-
-export const stopSpeaking = () => {
-  if (typeof window !== "undefined" && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-    isSpeaking = false;
-  }
-};
+let hasInitialized = false;
 
 // Helper: Detect iOS device
 const isIOS = () => {
@@ -14,10 +8,21 @@ const isIOS = () => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
 };
 
+// Helper: Initialize speech synthesis
+const initializeSpeechSynthesis = () => {
+  if (typeof window === "undefined" || !window.speechSynthesis || hasInitialized) return;
+  
+  // Force initialization of speech synthesis
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance('');
+  window.speechSynthesis.speak(utterance);
+  window.speechSynthesis.cancel();
+  hasInitialized = true;
+};
+
 // Helper: Reset and resume speech synthesis (iOS workaround)
 const resetSpeechSynthesis = () => {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
-  
   window.speechSynthesis.cancel();
   window.speechSynthesis.resume();
 };
@@ -25,21 +30,34 @@ const resetSpeechSynthesis = () => {
 // Helper: Initialize voices and return a promise
 const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
   return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      resolve([]);
+      return;
+    }
+
+    // Initialize speech synthesis first
+    initializeSpeechSynthesis();
+
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
       resolve(voices);
     } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        resolve(window.speechSynthesis.getVoices());
+      // Set up event listener for voices changed
+      const voicesChangedHandler = () => {
+        const updatedVoices = window.speechSynthesis.getVoices();
+        if (updatedVoices.length > 0) {
+          window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler);
+          resolve(updatedVoices);
+        }
       };
+
+      window.speechSynthesis.addEventListener('voiceschanged', voicesChangedHandler);
+
       // Fallback in case onvoiceschanged doesn't fire
       setTimeout(() => {
+        window.speechSynthesis.removeEventListener('voiceschanged', voicesChangedHandler);
         const fallbackVoices = window.speechSynthesis.getVoices();
-        if (fallbackVoices.length > 0) {
-          resolve(fallbackVoices);
-        } else {
-          resolve([]);
-        }
+        resolve(fallbackVoices.length > 0 ? fallbackVoices : []);
       }, 1000);
     }
   });
@@ -49,35 +67,45 @@ const initializeVoices = (): Promise<SpeechSynthesisVoice[]> => {
 const getVoice = async (lang: string = "es-ES"): Promise<SpeechSynthesisVoice | null> => {
   const voices = await initializeVoices();
   
-  // Quality voice providers
+  if (isIOS()) {
+    // On iOS, prefer local voices as they are more reliable
+    return (
+      // First try to find a local voice in the exact language
+      voices.find((v) => v.lang === lang && v.localService) ||
+      // Then try any voice in the exact language
+      voices.find((v) => v.lang === lang) ||
+      // Then try local voice in base language
+      voices.find((v) => v.lang.startsWith(lang.split("-")[0]) && v.localService) ||
+      // Then any voice in base language
+      voices.find((v) => v.lang.startsWith(lang.split("-")[0])) ||
+      // Finally, just get any available voice
+      voices[0] ||
+      null
+    );
+  }
+
+  // For non-iOS devices, keep the existing logic
   const preferredProviders = ["Google", "Microsoft", "Natural"];
   
-  // Try to find the best quality voice in the following order:
   return (
-    // 1. Premium/enhanced voice in exact language
     voices.find((v) => 
       v.lang === lang && 
       (v.name.toLowerCase().includes("premium") || 
        v.name.toLowerCase().includes("enhanced") ||
        preferredProviders.some(provider => v.name.includes(provider)))
     ) ||
-    // 2. Any Google/Microsoft voice in exact language
     voices.find((v) => 
       v.lang === lang && 
       preferredProviders.some(provider => v.name.includes(provider))
     ) ||
-    // 3. Any voice in exact language
     voices.find((v) => v.lang === lang) ||
-    // 4. Premium/enhanced voice in base language
     voices.find((v) => 
       v.lang.startsWith(lang.split("-")[0]) && 
       (v.name.toLowerCase().includes("premium") || 
        v.name.toLowerCase().includes("enhanced") ||
        preferredProviders.some(provider => v.name.includes(provider)))
     ) ||
-    // 5. Any voice in base language
     voices.find((v) => v.lang.startsWith(lang.split("-")[0])) ||
-    // 6. First available voice as last resort
     voices[0] ||
     null
   );
@@ -126,6 +154,13 @@ const splitIntoChunks = (text: string): string[] => {
   return chunks;
 };
 
+export const stopSpeaking = () => {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    isSpeaking = false;
+  }
+};
+
 export const speakMessage = async (
   text: string,
   isMuted: boolean = false,
@@ -142,6 +177,9 @@ export const speakMessage = async (
   }
 
   try {
+    // Initialize speech synthesis if needed
+    initializeSpeechSynthesis();
+
     // Cancel any ongoing speech
     stopSpeaking();
 
@@ -158,7 +196,6 @@ export const speakMessage = async (
     }
 
     // Split text into manageable chunks
-    // Use smaller chunks for iOS to prevent cutting off
     const chunks = splitIntoChunks(text);
     
     const speakChunk = (index: number) => {
@@ -180,9 +217,9 @@ export const speakMessage = async (
         
         // Adjust parameters for iOS
         if (isIOS()) {
-          utterance.rate = 0.9;  // Slightly slower on iOS
+          utterance.rate = 0.9;
           utterance.pitch = 1.0;
-          utterance.volume = 0.9;
+          utterance.volume = 1.0;  // Set to full volume for iOS
         } else {
           utterance.rate = 1.1;
           utterance.pitch = 1.0;
@@ -190,18 +227,14 @@ export const speakMessage = async (
         }
 
         utterance.onend = () => {
-          // iOS specific handling
           if (isIOS()) {
             resetSpeechSynthesis();
-          }
-          // Ensure speech synthesis is not paused
-          else if (window.speechSynthesis.paused) {
+          } else if (window.speechSynthesis.paused) {
             window.speechSynthesis.resume();
           }
           
           if (index < chunks.length - 1) {
-            // Longer pause between chunks on iOS
-            const delay = isIOS() ? 600 : 400;
+            const delay = isIOS() ? 300 : 400;  // Shorter delay for iOS
             setTimeout(() => speakChunk(index + 1), delay);
           } else {
             isSpeaking = false;
@@ -210,42 +243,40 @@ export const speakMessage = async (
 
         utterance.onerror = (event) => {
           const error = event as SpeechSynthesisErrorEvent;
-          if (error.error !== 'interrupted' && error.error !== 'canceled') {
-            console.debug("Speech chunk completed with non-critical error:", {
-              chunk: index,
-              error: error.error
-            });
-            
-            // Try to recover on iOS
-            if (isIOS()) {
-              resetSpeechSynthesis();
-            }
+          console.debug("Speech error:", {
+            chunk: index,
+            error: error.error,
+            voice: voice.name,
+            lang: lang
+          });
+          
+          if (isIOS()) {
+            resetSpeechSynthesis();
           }
           
           if (index < chunks.length - 1) {
-            const delay = isIOS() ? 600 : 400;
+            const delay = isIOS() ? 300 : 400;
             setTimeout(() => speakChunk(index + 1), delay);
           } else {
             isSpeaking = false;
           }
         };
 
-        // Resume synthesis if it was paused
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
-        }
-
-        // Additional iOS check before speaking
+        // iOS requires a user gesture to start speech
+        // We'll try to speak anyway, but warn in console
         if (isIOS()) {
-          resetSpeechSynthesis();
+          console.debug("Speaking on iOS:", {
+            voiceName: voice.name,
+            voiceLang: voice.lang,
+            isLocal: voice.localService
+          });
         }
 
         window.speechSynthesis.speak(utterance);
       } catch (error) {
-        console.error("Error creating utterance for chunk", index, ":", error);
+        console.error("Error speaking chunk:", error);
         if (index < chunks.length - 1) {
-          const delay = isIOS() ? 600 : 400;
-          setTimeout(() => speakChunk(index + 1), delay);
+          setTimeout(() => speakChunk(index + 1), 300);
         } else {
           isSpeaking = false;
         }
@@ -254,9 +285,8 @@ export const speakMessage = async (
 
     isSpeaking = true;
     speakChunk(0);
-
   } catch (error) {
-    console.error("Error in speech synthesis:", error);
+    console.error("Error in speakMessage:", error);
     isSpeaking = false;
   }
 };
