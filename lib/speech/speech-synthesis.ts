@@ -202,27 +202,46 @@ const getVoice = async (
   }
 
   if (isIOS()) {
-    // For iOS, try to find the best possible voice
+    // For iOS, prioritize Spanish (Spain) voice first
+    const spainVoice = voices.find(
+      (v) =>
+        v.lang === "es-ES" &&
+        !isMaleVoice(v) &&
+        (v.name.toLowerCase().includes('mónica') || // Common high-quality Spanish voice on iOS
+         v.name.toLowerCase().includes('monica') ||
+         v.name.toLowerCase().includes('spain'))
+    );
+
+    if (spainVoice) {
+      console.debug('Selected Spanish (Spain) iOS voice:', {
+        name: spainVoice.name,
+        lang: spainVoice.lang,
+        isLocal: spainVoice.localService
+      });
+      return spainVoice;
+    }
+
+    // If no Spain voice found, try to find the best possible voice
     const bestVoice = 
-      // 1. Try to find Paulina Mobile (high quality Mexican voice)
+      // 1. Try other high-quality Spanish voices
+      voices.find(
+        (v) =>
+          v.lang === "es-ES" &&
+          !isMaleVoice(v) &&
+          isHighQualityVoice(v)
+      ) ||
+      // 2. Try natural-sounding Spanish (Spain) voices
+      voices.find(
+        (v) =>
+          v.lang === "es-ES" &&
+          !isMaleVoice(v) &&
+          isNaturalVoice(v)
+      ) ||
+      // 3. Try Paulina Mobile as fallback
       voices.find(
         (v) =>
           v.name.toLowerCase().includes('paulina') &&
           v.name.toLowerCase().includes('mobile')
-      ) ||
-      // 2. Try other high-quality voices
-      voices.find(
-        (v) =>
-          spanishVariants.includes(v.lang) &&
-          !isMaleVoice(v) &&
-          isHighQualityVoice(v)
-      ) ||
-      // 3. Try natural-sounding voices
-      voices.find(
-        (v) =>
-          spanishVariants.includes(v.lang) &&
-          !isMaleVoice(v) &&
-          isNaturalVoice(v)
       );
 
     if (bestVoice) {
@@ -236,15 +255,15 @@ const getVoice = async (
       return bestVoice;
     }
 
-    // If no high-quality voice found, try any Spanish voice
+    // If no high-quality voice found, try any Spanish (Spain) voice
     const fallbackVoice = voices.find(
       (v) =>
-        spanishVariants.includes(v.lang) &&
+        v.lang === "es-ES" &&
         !isMaleVoice(v)
     ) || null;
 
     if (fallbackVoice) {
-      console.debug('Using fallback voice:', {
+      console.debug('Using fallback Spanish voice:', {
         name: fallbackVoice.name,
         lang: fallbackVoice.lang,
         isLocal: fallbackVoice.localService,
