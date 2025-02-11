@@ -57,7 +57,7 @@ export const guarantees = [
   {
     title: "Entrega rápida",
     description:
-      "Entregamos tus proyectos en 1-2 semanas. Realizamos entregas de calidad y sin comprometer la calidad.",
+      "Entregamos tus sitios web en 1 semana o menos. Realizamos entregas de calidad sin comprometer la excelencia.",
   },
   {
     title: "Diseño y Desarrollo",

@@ -100,7 +100,16 @@ export default function Chat() {
           setMessages((prev) => [...prev, newMessage]);
 
           if (!isMuted) {
-            await speakMessage(response.content, false, newMessage.language);
+            // Clean the text before speaking by removing markdown and special characters
+            const cleanedText = response.content
+              .replace(/\*\*/g, '') // Remove bold markdown
+              .replace(/\*/g, '')   // Remove italic markdown
+              .replace(/`/g, '')    // Remove code markdown
+              .replace(/\n/g, ' ')  // Replace newlines with spaces
+              .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+              .trim();
+            
+            await speakMessage(cleanedText, false, newMessage.language);
           }
         }
       };
