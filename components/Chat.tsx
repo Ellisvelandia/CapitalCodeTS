@@ -40,6 +40,12 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleQuickQuestion = (question: string) => {
+    stopSpeaking(); // Stop any ongoing speech
+    setInputMessage(question);
+    handleSend(new Event('submit') as any);
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     const now = Date.now();
@@ -49,9 +55,9 @@ export default function Chat() {
       return;
     }
 
-    if (!inputMessage.trim() || isLoading) return;
+    stopSpeaking(); // Stop any ongoing speech
 
-    stopSpeaking();
+    if (!inputMessage.trim() || isLoading) return;
 
     const userMsg = inputMessage.trim();
     setInputMessage("");
@@ -144,6 +150,11 @@ export default function Chat() {
     setIsExpanded((prev) => !prev);
   };
 
+  const toggleMute = () => {
+    stopSpeaking(); // Stop any ongoing speech when muting
+    setIsMuted(!isMuted);
+  };
+
   return (
     <div
       className={`fixed ${
@@ -194,12 +205,7 @@ export default function Chat() {
               </button>
             </div>
             <button
-              onClick={() => {
-                setIsMuted(!isMuted);
-                if (!isMuted) {
-                  stopSpeaking();
-                }
-              }}
+              onClick={toggleMute}
               aria-label={isMuted ? "Activar sonido" : "Silenciar"}
               className="p-1.5 hover:bg-gray-800 rounded-full focus:outline-none"
             >
@@ -274,10 +280,7 @@ export default function Chat() {
               {quickQuestions.map((q, i) => (
                 <button
                   key={i}
-                  onClick={() => {
-                    setInputMessage(q);
-                    handleSend({ preventDefault: () => {} } as React.FormEvent);
-                  }}
+                  onClick={() => handleQuickQuestion(q)}
                   className="text-xs bg-black/5 hover:bg-black/10 text-black dark:text-white px-3 py-1.5 rounded-full transition-colors"
                   aria-label={`Pregunta rápida: ${q}`}
                 >

@@ -1,6 +1,7 @@
-// Keep track of speaking state
+// Keep track of speaking state and current utterance
 let isSpeaking = false;
 let hasInitialized = false;
+let currentUtterance: SpeechSynthesisUtterance | null = null;
 
 // Helper: Detect iOS device
 const isIOS = () => {
@@ -407,17 +408,45 @@ const splitIntoChunks = (text: string): string[] => {
 
 // Helper: Clean text for speech synthesis
 const cleanTextForSpeech = (text: string): string => {
-  return text
-    .replace(/[^\p{L}\p{N}\s.,¿?¡!()]/gu, '') // Remove special characters
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')   // Extract text from markdown links
-    .replace(/\s+/g, ' ')                      // Normalize spaces
+  // Handle email addresses - replace underscores with spaces and add pauses
+  text = text.replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi, (email) => {
+    return email
+      .replace(/_/g, ' ') // Replace underscores with spaces
+      .replace(/([a-zA-Z0-9]+)@([a-zA-Z0-9]+)\.([a-zA-Z0-9]+)/gi, '$1 at $2 dot $3') // Make email more speakable
+      .replace(/\./g, ' dot '); // Replace remaining dots with "dot"
+  });
+
+  // Clean other special characters and formatting
+  text = text
+    .replace(/\*\*/g, '')  // Remove bold markdown
+    .replace(/\*/g, '')    // Remove italic markdown
+    .replace(/`/g, '')     // Remove code markdown
+    .replace(/\n/g, ', ')  // Replace newlines with pauses
+    .replace(/\s+/g, ' ')  // Normalize spaces
     .trim();
+
+  return text;
 };
 
+// Helper: Stop speaking and clean up
 export const stopSpeaking = () => {
-  if (typeof window !== "undefined" && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-    isSpeaking = false;
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  
+  // Cancel any ongoing speech synthesis
+  window.speechSynthesis.cancel();
+  
+  // Remove event listeners from current utterance if it exists
+  if (currentUtterance) {
+    currentUtterance.onend = null;
+    currentUtterance.onerror = null;
+    currentUtterance = null;
+  }
+  
+  isSpeaking = false;
+  
+  // Reset speech synthesis for iOS
+  if (isIOS()) {
+    resetSpeechSynthesis();
   }
 };
 
@@ -430,27 +459,21 @@ export const speakMessage = async (
     typeof window === "undefined" ||
     !window.speechSynthesis ||
     isMuted ||
-    isSpeaking ||
     !text
   ) {
     return;
   }
 
   try {
+    // Stop any ongoing speech first
+    stopSpeaking();
+    
     // Clean the text before speaking
     const cleanedText = cleanTextForSpeech(text);
     if (!cleanedText) return;
 
     // Initialize speech synthesis if needed
     initializeSpeechSynthesis();
-
-    // Cancel any ongoing speech
-    stopSpeaking();
-
-    // Reset speech synthesis for iOS
-    if (isIOS()) {
-      resetSpeechSynthesis();
-    }
 
     // Get voice first to ensure it's available
     const voice = await getVoice(lang);
@@ -459,19 +482,12 @@ export const speakMessage = async (
       return;
     }
 
-    // Log selected voice info for debugging
-    console.debug("Selected Spanish voice:", {
-      name: voice.name,
-      lang: voice.lang,
-      isLocal: voice.localService,
-      voiceURI: voice.voiceURI,
-    });
-
     // Split text into manageable chunks
     const chunks = splitIntoChunks(cleanedText);
 
     const speakChunk = (index: number) => {
-      if (index >= chunks.length) {
+      // Don't continue if speech was stopped
+      if (!isSpeaking || index >= chunks.length) {
         isSpeaking = false;
         return;
       }
@@ -484,24 +500,15 @@ export const speakMessage = async (
 
       try {
         const utterance = new SpeechSynthesisUtterance(chunk);
+        currentUtterance = utterance;  // Store current utterance
         utterance.voice = voice;
         utterance.lang = lang;
 
         // Adjust parameters for iOS
         if (isIOS()) {
-          // Use more natural-sounding parameters
-          utterance.rate = 1.0;      // Normal speed
-          utterance.pitch = 1.0;     // Natural pitch
-          utterance.volume = 1.0;    // Full volume
-          
-          // Add some subtle improvements
-          if (typeof utterance.voice !== 'undefined' && utterance.voice) {
-            console.debug('Using voice settings:', {
-              name: utterance.voice.name,
-              rate: utterance.rate,
-              pitch: utterance.pitch
-            });
-          }
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
+          utterance.volume = 1.0;
         } else {
           utterance.rate = 1.1;
           utterance.pitch = 1.0;
@@ -509,60 +516,29 @@ export const speakMessage = async (
         }
 
         utterance.onend = () => {
+          // Don't continue if speech was stopped
+          if (!isSpeaking) return;
+          
           if (isIOS()) {
             resetSpeechSynthesis();
-          } else if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
           }
 
           if (index < chunks.length - 1) {
-            const delay = isIOS() ? 300 : 400; // Shorter delay for iOS
-            setTimeout(() => speakChunk(index + 1), delay);
+            setTimeout(() => speakChunk(index + 1), isIOS() ? 300 : 400);
           } else {
-            isSpeaking = false;
+            stopSpeaking();
           }
         };
 
         utterance.onerror = (event) => {
-          const error = event as SpeechSynthesisErrorEvent;
-          console.debug("Speech error:", {
-            chunk: index,
-            error: error.error,
-            voice: voice.name,
-            lang: lang,
-          });
-
-          if (isIOS()) {
-            resetSpeechSynthesis();
-          }
-
-          if (index < chunks.length - 1) {
-            const delay = isIOS() ? 300 : 400;
-            setTimeout(() => speakChunk(index + 1), delay);
-          } else {
-            isSpeaking = false;
-          }
+          console.error("Speech error:", event);
+          stopSpeaking();
         };
-
-        // iOS requires a user gesture to start speech
-        // We'll try to speak anyway, but warn in console
-        if (isIOS()) {
-          console.debug("Selected Spanish voice:", {
-            name: voice.name,
-            lang: voice.lang,
-            isLocal: voice.localService,
-            voiceURI: voice.voiceURI,
-          });
-        }
 
         window.speechSynthesis.speak(utterance);
       } catch (error) {
         console.error("Error speaking chunk:", error);
-        if (index < chunks.length - 1) {
-          setTimeout(() => speakChunk(index + 1), 300);
-        } else {
-          isSpeaking = false;
-        }
+        stopSpeaking();
       }
     };
 
@@ -570,6 +546,6 @@ export const speakMessage = async (
     speakChunk(0);
   } catch (error) {
     console.error("Error in speakMessage:", error);
-    isSpeaking = false;
+    stopSpeaking();
   }
 };

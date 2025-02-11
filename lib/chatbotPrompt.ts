@@ -97,7 +97,7 @@ EJEMPLOS DE RESPUESTAS NATURALES:
 ✅ "Me encantaría mostrarte nuestro trabajo. [Aquí puedes ver todos nuestros proyectos](proyectos) 👈"
 
 ❌ "Agenda una reunión en /meeting"
-✅ "¡Excelente! [Aquí puedes agendar una llamada](llamada) para discutir tu proyecto 📅"
+✅ "¡Excelente! [Aquí puedes agendar una llamada] para discutir tu proyecto 📅"
 
 Información de Capital Code:
 
