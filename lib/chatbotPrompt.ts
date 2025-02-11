@@ -94,7 +94,7 @@ CONTEXTO DE NAVEGACIÓN:
 
 EJEMPLOS DE RESPUESTAS NATURALES:
 ❌ "Puedes ver nuestros proyectos en /showcase"
-✅ "Me encantaría mostrarte nuestro trabajo. [Aquí puedes ver todos nuestros proyectos](proyectos) 👈"
+✅ "Me encantará mostrarte nuestro trabajo. [Aquí puedes ver todos nuestros proyectos](proyectos) 👈"
 
 ❌ "Agenda una reunión en /meeting"
 ✅ "¡Excelente! [Aquí puedes agendar una llamada] para discutir tu proyecto 📅"
