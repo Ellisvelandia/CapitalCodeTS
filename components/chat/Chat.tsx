@@ -2,10 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { FaTimes, FaComment } from "react-icons/fa";
 import { speakMessage, stopSpeaking } from "@/lib/speech/speech-synthesis";
-import ChatHeader from "./ChatHeader";
-import ChatMessages from "./ChatMessages";
-import ChatQuickQuestions from "./ChatQuickQuestions";
-import ChatInput from "./ChatInput";
+import { ChatHeader, ChatMessages, ChatQuickQuestions, ChatInput } from "./index";
 
 interface ChatMessage {
   type: "user" | "bot";
